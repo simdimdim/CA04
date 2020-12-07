@@ -1,4 +1,3 @@
-use itertools::izip;
 use std::{
     cmp::{max, min},
     ops::{Add, AddAssign, Sub, SubAssign},
@@ -88,8 +87,13 @@ impl Sub for Block {
             };
         }
         if n != 0 {
-            types[count - n..count].fill(0);
-            values[count - n..count].fill(0);
+            for m in count - n..count {
+                types[m] = 0;
+                values[m] = 0;
+            }
+            // unstable
+            // types[count - n..].fill(0);
+            // values[count - n..].fill(0);
             types[count - n..].rotate_left(n);
             values[count - n..].rotate_left(n);
         }
@@ -166,8 +170,13 @@ impl SubAssign for Block {
             };
         }
         if n != 0 {
-            types[count - n..count].fill(0);
-            values[count - n..count].fill(0);
+            for m in count - n..count {
+                types[m] = 0;
+                values[m] = 0;
+            }
+            // unstable
+            // types[count - n..].fill(0);
+            // values[count - n..].fill(0);
             types[count - n..].rotate_left(n);
             values[count - n..].rotate_left(n);
         }

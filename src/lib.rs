@@ -1,3 +1,2 @@
-#![feature(destructuring_assignment)]
-#![feature(slice_fill)]
+// #![feature(destructuring_assignment)]
 pub mod engine;
