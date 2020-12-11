@@ -1,26 +1,23 @@
-pub mod block;
-use std::{
-    collections::{hash_map, HashMap},
-    rc::Rc,
-};
+pub mod tile;
+use std::collections::{hash_map, HashMap};
 
-use self::block::Block;
+use self::tile::Tile;
 
 pub struct World {
-    pub tiles: HashMap<Rc<(u16, u16)>, Block>,
+    pub tiles: HashMap<(u16, u16), Tile>,
 }
 
 impl World {
     pub fn new() -> Self {
-        let tiles = HashMap::<Rc<(u16, u16)>, Block>::new();
+        let tiles = HashMap::<(u16, u16), Tile>::new();
         Self { tiles }
     }
 
     pub fn insert_mut(
         &mut self,
-        block: Block,
+        block: Tile,
     ) {
-        match self.tiles.entry(block.coords.clone()) {
+        match self.tiles.entry(block.coords()) {
             hash_map::Entry::Occupied(e) => *e.into_mut() += block,
             hash_map::Entry::Vacant(e) => {
                 e.insert(block);
@@ -30,26 +27,15 @@ impl World {
 
     pub fn insert(
         &mut self,
-        block: Block,
+        block: Tile,
     ) {
-        self.tiles.insert(block.coords.clone(), block);
+        self.tiles.insert(block.coords(), block);
     }
 
     pub fn test(&mut self) {
-        let mut a = Block {
-            coords:  Rc::new((0, 0)),
-            types:   [0; 64],
-            values:  [0; 64],
-            members: 7,
-        };
-        a.types[0..7].copy_from_slice(&[1, 2, 3, 4, 5, 6, 7]);
-        a.values[0..7].copy_from_slice(&[10, 10, 10, 10, 10, 11, 17]);
-        let mut b = a.clone();
-        b.types[0..7].copy_from_slice(&[1, 2, 3, 4, 7, 0, 0]);
-        b.values[0..7].copy_from_slice(&[2, 20, 10, 7, 2, 0, 0]);
-        b.members = 5;
-        self.insert(a);
-        self.insert(b);
+        for i in 0..10 {
+            self.insert(Tile::new(u16::MAX / 2, u16::MAX / 2 + i).rand())
+        }
     }
 
     pub fn update(&mut self) {}

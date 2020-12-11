@@ -1,38 +1,55 @@
 use std::{
     cmp::{max, min},
+    convert::TryInto,
     ops::{Add, AddAssign, Sub, SubAssign},
-    rc::Rc,
 };
 
 #[derive(Eq, PartialEq, Clone, Debug)]
-pub struct Block {
-    pub coords:  Rc<(u16, u16)>,
-    pub types:   [u32; 64],
-    pub values:  [u32; 64],
+pub struct Tile {
+    pub x:       u16,
+    pub y:       u16,
+    pub types:   [u32; 16],
+    pub values:  [u32; 16],
     pub members: u16,
 }
-impl Block {
-    pub fn new(coords: (u16, u16)) -> Self {
-        let coords = Rc::new(coords);
-        let types = [0; 64];
-        let values = [0; 64];
+impl Tile {
+    pub fn new(
+        x: u16,
+        y: u16,
+    ) -> Self {
+        let types = [0; 16];
+        let values = [0; 16];
+        let members = 0;
         Self {
-            coords,
+            x,
+            y,
             types,
             values,
-            members: 0,
+            members,
         }
     }
+
+    pub fn coords(&self) -> (u16, u16) { (self.x, self.y) }
+
+    pub fn rand(&mut self) -> Self {
+        use rand::Rng;
+        for i in 0..4 {
+            self.types[i] = i.try_into().unwrap();
+            self.values[i] = rand::thread_rng().gen_range(1, 8);
+            self.members = 4;
+        }
+        self.clone()
+    }
 }
-impl Add for Block {
+impl Add for Tile {
     type Output = Self;
 
     fn add(
         self,
         other: Self,
     ) -> Self {
-        let mut types = [0u32; 64];
-        let mut values = [0u32; 64];
+        let mut types = [0u32; 16];
+        let mut values = [0u32; 16];
         let mut members = self.members;
         let count = max(members, other.members) as usize;
         for i in 0..count {
@@ -50,22 +67,23 @@ impl Add for Block {
         }
         members = count as u16;
         Self {
-            coords: self.coords.clone(),
+            x: self.x,
+            y: self.y,
             types,
             values,
             members,
         }
     }
 }
-impl Sub for Block {
+impl Sub for Tile {
     type Output = Self;
 
     fn sub(
         self,
         other: Self,
     ) -> Self {
-        let mut types = [0u32; 64];
-        let mut values = [0u32; 64];
+        let mut types = [0u32; 16];
+        let mut values = [0u32; 16];
         let mut members = self.members;
         let count = min(members, other.members) as usize;
         let mut n = 0;
@@ -98,20 +116,22 @@ impl Sub for Block {
             values[count - n..].rotate_left(n);
         }
         Self {
-            coords: self.coords,
+            x: self.x,
+            y: self.y,
             types,
             values,
             members,
         }
     }
 }
-impl AddAssign for Block {
+impl AddAssign for Tile {
     fn add_assign(
         &mut self,
         other: Self,
     ) {
         let Self {
-            coords,
+            x,
+            y,
             mut types,
             mut values,
             mut members,
@@ -132,20 +152,22 @@ impl AddAssign for Block {
         }
         members = count as u16;
         *self = Self {
-            coords: coords.clone(),
+            x: *x,
+            y: *y,
             types,
             values,
             members,
         };
     }
 }
-impl SubAssign for Block {
+impl SubAssign for Tile {
     fn sub_assign(
         &mut self,
         other: Self,
     ) {
         let Self {
-            coords,
+            x,
+            y,
             mut types,
             mut values,
             mut members,
@@ -190,7 +212,8 @@ impl SubAssign for Block {
          * values[lower..].rotate_left(n);
          */
         *self = Self {
-            coords: coords.clone(),
+            x: *x,
+            y: *y,
             types,
             values,
             members,
