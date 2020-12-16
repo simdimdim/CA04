@@ -33,12 +33,12 @@ pub enum Action {
     Stats,
     ResetZoom,
     N,
-    S,
-    W,
-    E,
     NE,
+    E,
     SE,
+    S,
     SW,
+    W,
     NW,
 }
 #[derive(Clone, Debug)]

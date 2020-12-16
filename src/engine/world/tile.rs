@@ -1,6 +1,5 @@
 use std::{
     cmp::{max, min},
-    convert::TryInto,
     ops::{Add, AddAssign, Sub, SubAssign},
 };
 
@@ -34,7 +33,7 @@ impl Tile {
     pub fn rand(&mut self) -> Self {
         use rand::Rng;
         for i in 0..4 {
-            self.types[i] = i.try_into().unwrap();
+            self.types[i] = 1 + i as u32;
             self.values[i] = rand::thread_rng().gen_range(1, 8);
             self.members = 4;
         }

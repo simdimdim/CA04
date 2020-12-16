@@ -26,7 +26,7 @@ jobs:
           rust-version: ${{ matrix.rust }}
       - name: Build
         run: |
-          cargo build -Z features=itarget --verbose
+          cargo build -Z features=itarget
   windows-latest:
     runs-on: windows-latest
     strategy:
@@ -44,4 +44,4 @@ jobs:
         run: |
           cargo install cargo-vcpkg
           cargo vcpkg build
-          cargo build -Z features=itarget --verbose
+          cargo build -Z features=itarget

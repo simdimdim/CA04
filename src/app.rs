@@ -40,8 +40,9 @@ pub struct App {
     pub stats:          bool,
     pub world:          World,
     pub input:          InputHandler,
-    pub zoom:           (f64, f64),
+    pub size:           (f64, f64),
 }
+type T = u16;
 impl App {
     pub fn toggle_stats(&mut self) { self.stats = !self.stats; }
 
@@ -58,20 +59,26 @@ impl App {
 
     pub fn tick(&mut self) -> usize { self.fps.tick() }
 
+    pub fn size(
+        &mut self,
+        size: f64,
+    ) {
+        const FACTOR: f64 = 2.3;
+        self.size.1 = size * self.size.0.abs().ln_1p().exp() * FACTOR;
+    }
+
     pub fn draw_tiles(
         &mut self,
         c: &Context,
         g: &mut GfxGraphics<Resources, CommandBuffer>,
     ) {
+        use graphics::Line;
+
+        let size = if self.size.0 > 0.1 { self.size.0 } else { 0.1 };
+        let transform = c.transform.trans(self.focus[0], self.focus[1]);
         for b in self.world.tiles.values() {
-            let transform = c
-                .transform
-                .trans(self.focus[0] + self.w / 2., self.focus[1] + self.h / 2.);
-            let square = rectangle::square(
-                b.x as f64 * (self.zoom.0 + 1.) as f64,
-                b.y as f64 * (self.zoom.0 + 1.) as f64,
-                if self.zoom.0 > 0.1 { self.zoom.0 } else { 0.1 },
-            );
+            let square =
+                rectangle::square(b.x as f64 * size, b.y as f64 * size, size);
             rectangle(
                 [
                     (7 * b.members % 16) as f32 / 16.,
@@ -84,32 +91,14 @@ impl App {
                 g,
             );
         }
-    }
 
-    pub fn zoom(
-        &mut self,
-        zoom: f64,
-    ) {
-        const FACTOR: f64 = 2.3;
-        self.zoom.1 = zoom * self.zoom.0.abs().ln_1p().exp() * FACTOR;
-    }
-
-    pub fn update(&mut self) {
-        let step = 4. * self.zoom.1 / self.ups;
-        self.zoom.0 = if self.zoom.0 + step > 0.5 {
-            self.zoom.0 + step
-        } else {
-            0.5
-        };
-        self.zoom.1 = if step.abs() > 4. / self.ups {
-            self.zoom.1 - step
-        } else {
-            0.
-        };
-
-        // println!("{:?}", self.zoom);
-
-        self.world.update()
+        let cell_edge = Line::new([1., 1., 1., 1.], size);
+        let x = -1.;
+        let x2 = u16::MAX as f64 * size;
+        cell_edge.draw([x, x, x, x2], &c.draw_state, transform, g);
+        cell_edge.draw([x, x, x2, x], &c.draw_state, transform, g);
+        cell_edge.draw([x, x2, x2, x2], &c.draw_state, transform, g);
+        cell_edge.draw([x2, x, x2, x2], &c.draw_state, transform, g);
     }
 
     pub fn draw(
@@ -119,35 +108,7 @@ impl App {
         device: &mut Device,
     ) {
         self.draw_tiles(c, g);
-        // // Generate and draw the lines for the Sudoku Grid.
-        // use graphics::{Line, Rectangle};
-        // let cell_edge = Line::new(cell_edge_color, cell_edge_radius);
-        // let section_edge = Line::new(section_edge_color, section_edge_radius;
-        // for i in 0..9 {
-        //     let x = position[0] + i as f64 / 9.0 * size;
-        //     let y = position[1] + i as f64 / 9.0 * size;
-        //     let x2 = position[0] + size;
-        //     let y2 = position[1] + size;
-        //     let vline = [x, position[1], x, y2];
-        //     let hline = [position[0], y, x2, y];
-        //     // Draw Section Lines instead of Cell Lines
-        //     if (i % 3) == 0 {
-        //         section_edge.draw(vline, &c.draw_state, c.transform, g);
-        //         section_edge.draw(hline, &c.draw_state, c.transform, g);
-        //     }
-        //     // Draw the regular cell Lines
-        //     else {
-        //         cell_edge.draw(vline, &c.draw_state, c.transform, g);
-        //         cell_edge.draw(hline, &c.draw_state, c.transform, g);
-        //     }
-        // }
-        // // Draw board edge.
-        // Rectangle::new_border(board_edge_color, board_edge_radius).draw(
-        //     board_rect,
-        //     &c.draw_state,
-        //     c.transform,
-        //     g,
-        // );
+
         clear([0.0, 0.0, 0.0, 1.0], g);
         if self.stats {
             let fps = &self.tick();
@@ -183,6 +144,21 @@ impl App {
     ) {
     }
 
+    pub fn update(&mut self) {
+        let step = 4. * self.size.1 / self.ups;
+        self.size.0 = if self.size.0 + step > 0.5 {
+            self.size.0 + step
+        } else {
+            0.5
+        };
+        self.size.1 = if step.abs() > 4. / self.ups {
+            self.size.1 - step
+        } else {
+            0.
+        };
+        self.world.update()
+    }
+
     /*pub fn glyphs<'b>(
         &'b mut self
     ) -> &'b mut GlyphCache<
@@ -200,55 +176,62 @@ impl App {
             Pass => {}
             Exit => self.exit(),
             Stats => self.stats = self.input.repeat(),
-            N => self.focus[1] = self.focus[1] - self.zoom.0,
-            E => self.focus[0] = self.focus[0] + self.zoom.0,
-            S => self.focus[1] = self.focus[1] + self.zoom.0,
-            W => self.focus[0] = self.focus[0] - self.zoom.0,
+            N => self.focus[1] = self.focus[1] + self.size.0,
             NE => {
-                self.focus[1] = self.focus[1] - self.zoom.0;
-                self.focus[0] = self.focus[0] + self.zoom.0;
+                self.focus[1] = self.focus[1] + self.size.0;
+                self.focus[0] = self.focus[0] - self.size.0;
             }
+            E => self.focus[0] = self.focus[0] - self.size.0,
             SE => {
-                self.focus[1] = self.focus[1] + self.zoom.0;
-                self.focus[0] = self.focus[0] + self.zoom.0;
+                self.focus[1] = self.focus[1] - self.size.0;
+                self.focus[0] = self.focus[0] - self.size.0;
             }
+            S => self.focus[1] = self.focus[1] - self.size.0,
             SW => {
-                self.focus[1] = self.focus[1] + self.zoom.0;
-                self.focus[0] = self.focus[0] - self.zoom.0;
+                self.focus[1] = self.focus[1] - self.size.0;
+                self.focus[0] = self.focus[0] + self.size.0;
             }
+            W => self.focus[0] = self.focus[0] + self.size.0,
             NW => {
-                self.focus[1] = self.focus[1] - self.zoom.0;
-                self.focus[0] = self.focus[0] - self.zoom.0;
+                self.focus[1] = self.focus[1] + self.size.0;
+                self.focus[0] = self.focus[0] + self.size.0;
             }
             ResetZoom => {
-                self.zoom = (1., 0.);
-                self.focus =
-                    [(u16::MAX / 2) as f64, (u16::MAX / 2) as f64, 0., 0.];
+                self.size = (1., 0.);
+                self.focus = [
+                    -(u16::MAX as f64) + self.w,
+                    -(u16::MAX as f64) + self.h,
+                    0.0,
+                    0.0,
+                ];
             }
         };
+
         #[allow(unused_variables)]
         for button in self.input.mouse() {
             match button {
-                LMB(x, y) => {
-                    self.get_pos(x, y);
-                }
-                RMB(x, y) => {}
+                LMB(x, y) => self.world.put(self.get_pos(x, y)),
+                RMB(x, y) => self.world.remove(&self.get_pos(x, y)),
                 MMB(x, y) => {}
                 Drag(x1, y1, x2, y2) => {}
             }
         }
     }
 
-    pub fn exit(&mut self) { self.world.end(); }
-
     fn get_pos(
         &self,
         x: &f64,
         y: &f64,
-    ) -> (u16, u16) {
-        (
-            ((self.focus[0] + x - self.w / 2.) / self.zoom.0) as u16,
-            ((self.focus[1] + y - self.h / 2.) / self.zoom.0) as u16,
-        )
+    ) -> (T, T) {
+        //TODO: This
+        let pos = (
+            ((-self.focus[0] + x) / self.size.0) as T,
+            ((-self.focus[1] + y) / self.size.0) as T,
+        );
+        println!("{:?}", self.focus);
+        println!("{:?}", pos);
+        pos
     }
+
+    pub fn exit(&mut self) { self.world.end(); }
 }

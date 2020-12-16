@@ -40,7 +40,7 @@ fn main() {
         app.event(&e);
 
         e.mouse_scroll(|d| {
-            app.zoom(d[1]);
+            app.size(d[1]);
             // app.focus[2] =
             //     app.focus[2] - d[1] * (2. * app.input.cursor[0] - app.w) /
             // 10.; app.focus[3] =
@@ -84,13 +84,13 @@ fn init(
         .unwrap();
     let stats = false;
     // let dim = Rc::new(RefCell::new((0., 0.)));
-    let focus = [(u16::MAX / 2) as f64, (u16::MAX / 2) as f64, 0.0, 0.0];
+    let focus = [0.0; 4];
     let w = 0.0;
     let h = 0.0;
     let ar = 0.0;
     let mut world = World::new();
     let mut input = InputHandler::new();
-    let zoom = (1., 0.);
+    let size = (1., 0.);
 
     input.populate();
     world.test();
@@ -110,6 +110,6 @@ fn init(
         stats,
         world,
         input,
-        zoom,
+        size,
     }
 }
