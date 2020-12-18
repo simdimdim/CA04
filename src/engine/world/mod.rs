@@ -3,15 +3,16 @@ pub mod logic;
 pub mod tile;
 
 use self::tile::Tile;
-use indexmap::{IndexMap, IndexSet};
+
+use indexmap::IndexSet;
 
 pub struct World {
-    pub tiles: IndexMap<(u16, u16), Tile>,
+    pub tiles: IndexSet<Tile>,
 }
 
 impl World {
     pub fn new() -> Self {
-        let tiles = IndexMap::<(u16, u16), Tile>::new();
+        let tiles = IndexSet::<Tile>::new();
         Self { tiles }
     }
 
@@ -19,7 +20,7 @@ impl World {
     //     &mut self,
     //     tile: Tile,
     // ) {
-    //     match self.tiles.entry((tile.x, tile.y)) {
+    //     match self.tiles.entry(tile) {
     //         hash_map::Entry::Occupied(e) => *e.into_mut() += tile,
     //         hash_map::Entry::Vacant(e) => {
     //             e.insert(tile);
@@ -31,21 +32,22 @@ impl World {
         &mut self,
         tile: Tile,
     ) {
-        self.tiles.insert((tile.x, tile.y), tile);
+        self.tiles.insert(tile);
     }
 
     pub fn remove(
         &mut self,
-        tile: &(u16, u16),
+        tile: &Tile,
     ) {
         self.tiles.remove(tile);
     }
 
     pub fn put(
         &mut self,
-        tile: (u16, u16),
+        tile: Tile,
     ) {
-        self.tiles.insert(tile, Tile::new(tile.0, tile.1).test());
+        let mut t = tile;
+        self.tiles.insert(t.test());
     }
 
     pub fn test(&mut self) {
@@ -56,21 +58,25 @@ impl World {
 
     pub fn update(&mut self) {
         let mut tmp = IndexSet::new();
-        let mut newtiles = IndexMap::new();
-        for (k, _v) in self.tiles.iter() {
-            if k.0 > 0 && k.1 > 0 && k.0 < u16::MAX && k.1 < u16::MAX {
-                tmp.insert((k.0 - 1, k.1 - 1));
-                tmp.insert((k.0, k.1 - 1));
-                tmp.insert((k.0 + 1, k.1 - 1));
-                tmp.insert((k.0 - 1, k.1));
-                tmp.insert((k.0 + 1, k.1));
-                tmp.insert((k.0 - 1, k.1 + 1));
-                tmp.insert((k.0, k.1 + 1));
-                tmp.insert((k.0 + 1, k.1 + 1));
+        let mut newtiles = IndexSet::new();
+        for v in self.tiles.iter() {
+            if v.x > 0 && v.y > 0 && v.x < u16::MAX && v.y < u16::MAX {
+                tmp.insert((v.x - 1, v.y - 1));
+                tmp.insert((v.x, v.y - 1));
+                tmp.insert((v.x + 1, v.y - 1));
+                tmp.insert((v.x - 1, v.y));
+                tmp.insert((v.x + 1, v.y));
+                tmp.insert((v.x - 1, v.y + 1));
+                tmp.insert((v.x, v.y + 1));
+                tmp.insert((v.x + 1, v.y + 1));
             }
         }
-        newtiles.insert(&(0, 0), Tile::new(0, 0).test());
+        newtiles.insert(Tile::new(0, 0).test());
     }
 
     pub fn end(&mut self) { self.tiles.clear(); }
+
+    pub fn hilbert(&mut self) {
+        self.tiles.par_sort_by(|left, right| left.cmp(&right));
+    }
 }

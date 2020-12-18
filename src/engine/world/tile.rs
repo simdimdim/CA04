@@ -1,13 +1,20 @@
-use super::field::Field;
+use super::{field::Field, logic::Rule};
 
+use hilbert::Point;
 use indexmap::IndexSet;
-use std::cmp::Ordering;
+use num_bigint::BigUint;
+use std::{
+    cmp::Ordering,
+    convert::TryFrom,
+    hash::{Hash, Hasher},
+};
 
 #[derive(Eq, Clone, Debug)]
 pub struct Tile {
     pub x:       u16,
     pub y:       u16,
     pub members: u16,
+    pub rule:    Option<Rule>,
     fields:      IndexSet<Field>,
 }
 
@@ -18,10 +25,12 @@ impl Tile {
     ) -> Self {
         let members = 0;
         let fields = IndexSet::new();
+        let rule = None;
         Self {
             x,
             y,
             members,
+            rule,
             fields,
         }
     }
@@ -44,7 +53,19 @@ impl Tile {
         }
     }
 
-    pub fn xy(&self) -> (&u16, &u16) { (&self.x, &self.y) }
+    pub fn hilbert_index(
+        &self,
+        &i: &usize,
+    ) -> u64 {
+        let a = Point::new(i, &[self.x as u32, self.y as u32])
+            .hilbert_transform(32)
+            .to_radix_be(32);
+
+        TryFrom::try_from(BigUint::from_radix_be(&a, 32).unwrap())
+            .expect("Tile hilbert index overflow?")
+    }
+
+    pub fn xy(&self) -> (u16, u16) { (self.x, self.y) }
 
     pub fn test(&mut self) -> Self {
         use rand::Rng;
@@ -59,7 +80,7 @@ impl Ord for Tile {
         &self,
         other: &Self,
     ) -> Ordering {
-        (self.x + self.y * u16::MAX).cmp(&(&other.x + &other.y * u16::MAX))
+        self.hilbert_index(&0).cmp(&&other.hilbert_index(&1))
     }
 }
 impl PartialOrd for Tile {
@@ -76,5 +97,14 @@ impl PartialEq for Tile {
         other: &Self,
     ) -> bool {
         self.x == other.x
+    }
+}
+impl Hash for Tile {
+    fn hash<H: Hasher>(
+        &self,
+        state: &mut H,
+    ) {
+        self.x.hash(state);
+        self.y.hash(state);
     }
 }

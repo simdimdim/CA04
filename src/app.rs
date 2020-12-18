@@ -1,5 +1,6 @@
 use crate::engine::{
     input::{Action::*, MouseA::*},
+    world::tile::Tile,
     InputHandler,
     World,
 };
@@ -32,7 +33,6 @@ pub struct App {
         TextureContext<Factory, Resources, CommandBuffer>,
         Texture<Resources>,
     >,
-    // dim:                Rc<RefCell<(f64, f64)>>,
     pub w:              f64,
     pub h:              f64,
     pub ar:             f64,
@@ -50,7 +50,6 @@ impl App {
         window: &PistonWindow<Sdl2Window>,
     ) {
         let Size { width, height } = window.window.draw_size();
-        // self.dim.replace((w, h));
         self.w = width;
         self.h = height;
         self.ar = width / height;
@@ -72,10 +71,9 @@ impl App {
         g: &mut GfxGraphics<Resources, CommandBuffer>,
     ) {
         use graphics::Line;
-
         let size = if self.size.0 > 0.1 { self.size.0 } else { 0.1 };
         let transform = c.transform.trans(self.focus[0], self.focus[1]);
-        for b in self.world.tiles.values() {
+        for b in self.world.tiles.iter() {
             let square =
                 rectangle::square(b.x as f64 * size, b.y as f64 * size, size);
             rectangle(
@@ -159,15 +157,6 @@ impl App {
         self.world.update()
     }
 
-    /*pub fn glyphs<'b>(
-        &'b mut self
-    ) -> &'b mut GlyphCache<
-        'static,
-        TextureContext<Factory, Resources, CommandBuffer>,
-        Texture<Resources>,
-    > {
-        &mut self.glyphs
-    }*/
     pub fn event(
         &mut self,
         e: &Event,
@@ -222,15 +211,14 @@ impl App {
         &self,
         x: &f64,
         y: &f64,
-    ) -> (T, T) {
-        //TODO: This
-        let pos = (
+    ) -> Tile {
+        let tile = Tile::new(
             ((-self.focus[0] + x) / self.size.0) as T,
             ((-self.focus[1] + y) / self.size.0) as T,
         );
         // dbg!(self.focus);
-        dbg!(pos);
-        pos
+        // dbg!(&tile);
+        tile
     }
 
     pub fn exit(&mut self) { self.world.end(); }
