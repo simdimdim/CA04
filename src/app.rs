@@ -1,4 +1,8 @@
-use std::path::PathBuf;
+use crate::engine::{
+    input::{Action::*, MouseA::*},
+    InputHandler,
+    World,
+};
 
 use fps_counter::FPSCounter;
 use gfx_device_gl::{CommandBuffer, Device, Factory, Resources};
@@ -13,12 +17,7 @@ use graphics::{
 };
 use piston_window::{Event, OpenGL, PistonWindow, RenderArgs, Size, Window};
 use sdl2_window::Sdl2Window;
-
-use crate::engine::{
-    input::{Action::*, MouseA::*},
-    InputHandler,
-    World,
-};
+use std::path::PathBuf;
 
 pub struct App {
     pub title:          String,
@@ -99,6 +98,7 @@ impl App {
         cell_edge.draw([x, x, x2, x], &c.draw_state, transform, g);
         cell_edge.draw([x, x2, x2, x2], &c.draw_state, transform, g);
         cell_edge.draw([x2, x, x2, x2], &c.draw_state, transform, g);
+        // TODO: Fix lower borders scaling with tile size.
     }
 
     pub fn draw(
@@ -228,8 +228,8 @@ impl App {
             ((-self.focus[0] + x) / self.size.0) as T,
             ((-self.focus[1] + y) / self.size.0) as T,
         );
-        println!("{:?}", self.focus);
-        println!("{:?}", pos);
+        // dbg!(self.focus);
+        dbg!(pos);
         pos
     }
 

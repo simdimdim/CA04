@@ -1,71 +1,75 @@
+pub mod field;
+pub mod logic;
 pub mod tile;
-use std::collections::{hash_map, HashMap, HashSet};
 
 use self::tile::Tile;
+use indexmap::{IndexMap, IndexSet};
 
 pub struct World {
-    pub tiles: HashMap<(u16, u16), Tile>,
+    pub tiles: IndexMap<(u16, u16), Tile>,
 }
 
 impl World {
     pub fn new() -> Self {
-        let tiles = HashMap::<(u16, u16), Tile>::new();
+        let tiles = IndexMap::<(u16, u16), Tile>::new();
         Self { tiles }
     }
 
-    pub fn insert_mut(
-        &mut self,
-        block: Tile,
-    ) {
-        match self.tiles.entry(block.coords()) {
-            hash_map::Entry::Occupied(e) => *e.into_mut() += block,
-            hash_map::Entry::Vacant(e) => {
-                e.insert(block);
-            }
-        }
-    }
+    // pub fn insert_mut(
+    //     &mut self,
+    //     tile: Tile,
+    // ) {
+    //     match self.tiles.entry((tile.x, tile.y)) {
+    //         hash_map::Entry::Occupied(e) => *e.into_mut() += tile,
+    //         hash_map::Entry::Vacant(e) => {
+    //             e.insert(tile);
+    //         }
+    //     }
+    // }
 
     pub fn insert(
         &mut self,
-        block: Tile,
+        tile: Tile,
     ) {
-        self.tiles.insert(block.coords(), block);
+        self.tiles.insert((tile.x, tile.y), tile);
     }
 
     pub fn remove(
         &mut self,
-        block: &(u16, u16),
+        tile: &(u16, u16),
     ) {
-        self.tiles.remove(block);
+        self.tiles.remove(tile);
     }
 
     pub fn put(
         &mut self,
-        block: (u16, u16),
+        tile: (u16, u16),
     ) {
-        self.tiles.insert(block, Tile::new(block.0, block.1).rand());
+        self.tiles.insert(tile, Tile::new(tile.0, tile.1).test());
     }
 
     pub fn test(&mut self) {
         for i in 0..10 {
-            self.insert(Tile::new(u16::MAX, i).rand());
+            self.insert(Tile::new(u16::MAX, i).test());
         }
     }
 
     pub fn update(&mut self) {
-        let mut tmp = HashSet::new();
-        let mut newtiles = HashMap::new();
-        for (k, v) in self.tiles.iter() {
-            tmp.insert((k.0 - 1, k.1 - 1));
-            tmp.insert((k.0, k.1 - 1));
-            tmp.insert((k.0 + 1, k.1 - 1));
-            tmp.insert((k.0 - 1, k.1));
-            tmp.insert((k.0 + 1, k.1));
-            tmp.insert((k.0 - 1, k.1 + 1));
-            tmp.insert((k.0, k.1 + 1));
-            tmp.insert((k.0 + 1, k.1 + 1));
+        let mut tmp = IndexSet::new();
+        let mut newtiles = IndexMap::new();
+        for (k, _v) in self.tiles.iter() {
+            if k.0 > 0 && k.1 > 0 && k.0 < u16::MAX && k.1 < u16::MAX {
+                tmp.insert((k.0 - 1, k.1 - 1));
+                tmp.insert((k.0, k.1 - 1));
+                tmp.insert((k.0 + 1, k.1 - 1));
+                tmp.insert((k.0 - 1, k.1));
+                tmp.insert((k.0 + 1, k.1));
+                tmp.insert((k.0 - 1, k.1 + 1));
+                tmp.insert((k.0, k.1 + 1));
+                tmp.insert((k.0 + 1, k.1 + 1));
+            }
         }
-        newtiles.insert(&(0, 0), Tile::new(0, 0).rand());
+        newtiles.insert(&(0, 0), Tile::new(0, 0).test());
     }
 
     pub fn end(&mut self) { self.tiles.clear(); }

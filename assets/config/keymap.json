@@ -1,0 +1,13 @@
+{
+    "[{\"Keyboard\":\"D\"},{\"Keyboard\":\"W\"}]": "NE",
+    "[{\"Keyboard\":\"A\"},{\"Keyboard\":\"W\"}]": "NW",
+    "[{\"Keyboard\":\"A\"}]": "W",
+    "[{\"Keyboard\":\"W\"}]": "N",
+    "[{\"Keyboard\":\"E\"}]": "Stats",
+    "[{\"Keyboard\":\"D\"},{\"Keyboard\":\"S\"}]": "SE",
+    "[{\"Keyboard\":\"A\"},{\"Keyboard\":\"S\"}]": "SW",
+    "[{\"Keyboard\":\"D\"}]": "E",
+    "[{\"Keyboard\":\"R\"}]": "ResetZoom",
+    "[{\"Keyboard\":\"Q\"}]": "Exit",
+    "[{\"Keyboard\":\"S\"}]": "S"
+}

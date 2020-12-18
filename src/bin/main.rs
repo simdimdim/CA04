@@ -1,9 +1,8 @@
-// use std::{cell::RefCell, path::PathBuf, rc::Rc};
-
 use ca04::{
     engine::{InputHandler, World},
     App,
 };
+
 use piston_window::{
     AdvancedWindow,
     EventLoop,
@@ -17,7 +16,6 @@ use piston_window::{
     WindowSettings,
 };
 use sdl2_window::Sdl2Window;
-extern crate find_folder;
 
 fn main() {
     let title = "CA04";
@@ -92,7 +90,7 @@ fn init(
     let mut input = InputHandler::new();
     let size = (1., 0.);
 
-    input.populate();
+    input.load_keymap();
     world.test();
 
     App {
