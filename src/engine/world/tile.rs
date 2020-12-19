@@ -65,16 +65,31 @@ impl Tile {
             .expect("Tile hilbert index overflow?")
     }
 
+    pub fn on_screen(
+        &self,
+        width: f64,
+        height: f64,
+        offset_x: f64,
+        offset_y: f64,
+        size: f64,
+    ) -> bool {
+        self.x as f64 * size > -offset_x &&
+            self.y as f64 * size > -offset_y &&
+            self.x as f64 * size < -offset_x + width &&
+            self.y as f64 * size < -offset_y + height
+    }
+
     pub fn xy(&self) -> (u16, u16) { (self.x, self.y) }
 
     pub fn test(&mut self) -> Self {
         use rand::Rng;
         for i in 0..4 {
-            self.add_field(Field(i + 1, rand::thread_rng().gen_range(1, 8)));
+            self.add_field(Field(i + 1, rand::thread_rng().gen_range(1..8)));
         }
         self.clone()
     }
 }
+
 impl Ord for Tile {
     fn cmp(
         &self,

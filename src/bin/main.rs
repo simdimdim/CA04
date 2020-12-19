@@ -12,7 +12,9 @@ use piston_window::{
     PistonWindow,
     RenderEvent,
     ResizeEvent,
+    Size,
     UpdateEvent,
+    Window,
     WindowSettings,
 };
 use sdl2_window::Sdl2Window;
@@ -28,12 +30,17 @@ fn main() {
             .build()
             .unwrap();
     let mut app = init(title, opengl, &mut window);
+    let ref mut glyphs = window
+        .load_font(app.assets.join("FiraSans-Regular.ttf"))
+        .unwrap();
     window.set_capture_cursor(app.capture_cursor);
-    window.set_max_fps((app.ups * 2.) as u64);
+    window.set_max_fps((app.ups * 4.) as u64);
     window.set_ups(app.ups as u64);
     while let Some(e) = window.next() {
         window.draw_2d(&e, |c, g, device| {
-            app.draw(&c, g, device);
+            app.draw(&c, g, device, glyphs);
+            // Update glyphs before rendering.
+            glyphs.factory.encoder.flush(device);
         });
         app.event(&e);
 
@@ -56,9 +63,7 @@ fn main() {
             app.render(&args);
         }
         if let Some(_args) = e.update_args() {
-            // app.ups = 1. / args.dt; // what is this???
             // println!("{}", args.dt);
-            // println!("{}", fps.tick());
             // println!("{:?}", world.tiles);
             app.update();
         }
@@ -72,26 +77,23 @@ fn init(
 ) -> App {
     let title = title.to_string();
     let fps = fps_counter::FPSCounter::new();
-    let ups = 120.0;
+    let ups = 60.0;
     let capture_cursor = false;
     let assets = find_folder::Search::ParentsThenKids(3, 3)
         .for_folder("assets")
         .unwrap();
-    let glyphs = window
-        .load_font(assets.join("FiraSans-Regular.ttf"))
-        .unwrap();
     let stats = false;
-    // let dim = Rc::new(RefCell::new((0., 0.)));
     let focus = [0.0; 4];
-    let w = 0.0;
-    let h = 0.0;
-    let ar = 0.0;
-    let mut world = World::new();
+    let Size {
+        width: w,
+        height: h,
+    } = window.window.draw_size();
+    let ar = w / h;
+    let world = World::new();
     let mut input = InputHandler::new();
     let size = (1., 0.);
 
     input.load_keymap();
-    world.test();
 
     App {
         title,
@@ -100,7 +102,6 @@ fn init(
         ups,
         capture_cursor,
         assets,
-        glyphs,
         focus,
         w,
         h,

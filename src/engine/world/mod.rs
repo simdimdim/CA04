@@ -8,12 +8,14 @@ use indexmap::IndexSet;
 
 pub struct World {
     pub tiles: IndexSet<Tile>,
+    changed:   bool,
 }
 
 impl World {
     pub fn new() -> Self {
         let tiles = IndexSet::<Tile>::new();
-        Self { tiles }
+        let changed = true;
+        Self { tiles, changed }
     }
 
     // pub fn insert_mut(
@@ -40,6 +42,7 @@ impl World {
         tile: &Tile,
     ) {
         self.tiles.remove(tile);
+        self.changed = true;
     }
 
     pub fn put(
@@ -48,30 +51,39 @@ impl World {
     ) {
         let mut t = tile;
         self.tiles.insert(t.test());
+        self.changed = true;
     }
 
-    pub fn test(&mut self) {
-        for i in 0..10 {
-            self.insert(Tile::new(u16::MAX, i).test());
+    pub fn test(&mut self) -> &mut Self {
+        for x in u16::MAX - 100..u16::MAX {
+            for y in u16::MAX - 100..u16::MAX {
+                self.insert(Tile::new(x, y).test());
+            }
         }
+        self.changed = true;
+        self
     }
 
     pub fn update(&mut self) {
-        let mut tmp = IndexSet::new();
-        let mut newtiles = IndexSet::new();
-        for v in self.tiles.iter() {
-            if v.x > 0 && v.y > 0 && v.x < u16::MAX && v.y < u16::MAX {
-                tmp.insert((v.x - 1, v.y - 1));
-                tmp.insert((v.x, v.y - 1));
-                tmp.insert((v.x + 1, v.y - 1));
-                tmp.insert((v.x - 1, v.y));
-                tmp.insert((v.x + 1, v.y));
-                tmp.insert((v.x - 1, v.y + 1));
-                tmp.insert((v.x, v.y + 1));
-                tmp.insert((v.x + 1, v.y + 1));
-            }
+        // let mut tmp = IndexSet::new();
+        // let mut newtiles = IndexSet::new();
+        // for v in self.tiles.iter() {
+        //     if v.x > 0 && v.y > 0 && v.x < u16::MAX && v.y < u16::MAX {
+        //         tmp.insert((v.x - 1, v.y - 1));
+        //         tmp.insert((v.x, v.y - 1));
+        //         tmp.insert((v.x + 1, v.y - 1));
+        //         tmp.insert((v.x - 1, v.y));
+        //         tmp.insert((v.x + 1, v.y));
+        //         tmp.insert((v.x - 1, v.y + 1));
+        //         tmp.insert((v.x, v.y + 1));
+        //         tmp.insert((v.x + 1, v.y + 1));
+        //     }
+        // }
+        // newtiles.insert(Tile::new(0, 0).test());
+        if self.changed {
+            self.hilbert();
+            self.changed = false;
         }
-        newtiles.insert(Tile::new(0, 0).test());
     }
 
     pub fn end(&mut self) { self.tiles.clear(); }

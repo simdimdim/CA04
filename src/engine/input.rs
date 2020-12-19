@@ -112,6 +112,12 @@ impl InputHandler {
                     // world.remove(world.grid.get_pos(cursor[0],
                     // cursor[1]));
                 }
+                if mouse_button == MouseButton::Middle {
+                    self.mouse
+                        .insert(button, MMB(self.cursor[0], self.cursor[1]));
+                    // world.remove(world.grid.get_pos(cursor[0],
+                    // cursor[1]));
+                }
             }
         }
         if let Some(button) = e.release_args() {
@@ -125,10 +131,8 @@ impl InputHandler {
             if let Button::Mouse(mouse_button) = button {
                 self.mouse.remove(&button);
                 if mouse_button == MouseButton::Left {}
-                if mouse_button == MouseButton::Right {
-                    // world.remove(world.grid.get_pos(cursor[0],
-                    // cursor[1]));
-                }
+                if mouse_button == MouseButton::Right {}
+                if mouse_button == MouseButton::Middle {}
             }
         }
 
