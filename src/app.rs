@@ -1,5 +1,5 @@
 use crate::engine::{
-    input::{Action::*, MouseA::*},
+    input::{Action::*, MouseB::*, MouseM::*},
     world::tile::Tile,
     InputHandler,
     World,
@@ -56,25 +56,19 @@ impl App {
 
     pub fn size(
         &mut self,
-        size: f64,
+        size: &f64,
     ) {
         const FACTOR: f64 = 1.3;
         self.size.1 = size * self.size.0.abs().ln_1p().exp() * FACTOR;
     }
 
-    fn _on_screen(
-        &self,
-        size: f64,
-    ) {
+    fn _on_screen(&self) {
         let _a: Vec<(u16, u16)> = self
             .world
             .tiles
             .par_iter()
-            .filter(|&a| {
-                (a.x as f64 * size > self.focus[0] &&
-                    a.y as f64 * size > self.focus[1]) &&
-                    (a.x as f64 * size < self.focus[0] + self.w &&
-                        a.y as f64 * size < self.focus[1] + self.h)
+            .filter(|&t| {
+                t.on_screen(self.w, self.h, self.focus[0], self.focus[1])
             })
             .map(|a| a.xy())
             .collect();
@@ -104,15 +98,17 @@ impl App {
         g: &mut GfxGraphics<Resources, CommandBuffer>,
     ) {
         let size = self.size.0;
-        let transform = c.transform.trans(self.focus[0], self.focus[1]);
+        let transform = c
+            .transform
+            .trans(self.focus[0] * size, self.focus[1] * size);
 
-        let con = Line::new([1., 1., 1., 1.], 0.5);
+        let con = Line::new([1., 1., 1., 0.8], 0.5);
         let mut loc = [0f64; 4];
         self.world
             .tiles
             .iter()
             .filter(|&t| {
-                t.on_screen(self.w, self.h, self.focus[0], self.focus[1], size)
+                t.on_screen(self.w, self.h, self.focus[0], self.focus[1])
             })
             .for_each(|t| {
                 let rect =
@@ -130,20 +126,13 @@ impl App {
                 loc.rotate_left(2);
             });
 
-        let cell_edge = Line::new([1., 1., 1., 1.], 1.);
-        let x = 1.;
-        let x2 = size * u16::MAX as f64;
-        cell_edge.draw([x, x, x, x2], &c.draw_state, transform, g);
-        cell_edge.draw([x, x, x2, x], &c.draw_state, transform, g);
-        cell_edge.draw([x, x2, x2, x2], &c.draw_state, transform, g);
-        cell_edge.draw([x2, x, x2, x2], &c.draw_state, transform, g);
-        // TODO: Fix lower borders scaling with tile size.
-    }
-
-    pub fn render(
-        &mut self,
-        _args: &RenderArgs,
-    ) {
+        let cell_edge = Line::new([1., 0.3, 0., 1.], 1.);
+        const TOP: f64 = 0.;
+        let x2 = (u16::MAX as f64 + 1.) * size;
+        cell_edge.draw([TOP, TOP, TOP, x2], &c.draw_state, transform, g);
+        cell_edge.draw([TOP, TOP, x2, TOP], &c.draw_state, transform, g);
+        cell_edge.draw([TOP, x2, x2, x2], &c.draw_state, transform, g);
+        cell_edge.draw([x2, TOP, x2, x2], &c.draw_state, transform, g);
     }
 
     pub fn update(&mut self) {
@@ -158,6 +147,34 @@ impl App {
         } else {
             0.
         };
+
+        self.focus[0] += self.focus[2];
+        self.focus[1] += self.focus[3];
+        self.focus[2] -= self.focus[2];
+        self.focus[3] -= self.focus[3];
+
+        // dbg!(self.size);
+        // let xrate = self.focus[2].abs().acos() / 10.;
+        // let yrate = self.focus[3].abs().acos() / 10.;
+        // if self.focus[2] != 0. {
+        //     self.focus[0] += xrate.copysign(self.focus[2]);
+        //     self.focus[2] = if xrate > 0.1 {
+        //         self.focus[2] - xrate.copysign(self.focus[2])
+        //     } else {
+        //         self.focus[0] += self.focus[2];
+        //         0.
+        //     };
+        // }
+        // if self.focus[3] != 0. {
+        //     self.focus[1] += yrate.copysign(self.focus[3]);
+        //     self.focus[3] = if yrate > self.focus[3].abs() / self.ups {
+        //         self.focus[3] - yrate.copysign(self.focus[3])
+        //     } else {
+        //         self.focus[1] += self.focus[3];
+        //         0.
+        //     };
+        // }
+        // dbg!(self.focus[2]);
         self.world.update()
     }
 
@@ -169,37 +186,37 @@ impl App {
             Pass => {}
             Exit => self.exit(),
             Stats => self.stats = self.input.repeat(),
-            N => self.focus[1] = self.focus[1] + self.size.0,
+            N => self.focus[3] += 1.,
             NE => {
-                self.focus[1] = self.focus[1] + self.size.0;
-                self.focus[0] = self.focus[0] - self.size.0;
+                self.focus[3] += 1.;
+                self.focus[2] -= 1.;
             }
-            E => self.focus[0] = self.focus[0] - self.size.0,
+            E => self.focus[2] -= 1.,
             SE => {
-                self.focus[1] = self.focus[1] - self.size.0;
-                self.focus[0] = self.focus[0] - self.size.0;
+                self.focus[3] -= 1.;
+                self.focus[2] -= 1.;
             }
-            S => self.focus[1] = self.focus[1] - self.size.0,
+            S => self.focus[3] -= 1.,
             SW => {
-                self.focus[1] = self.focus[1] - self.size.0;
-                self.focus[0] = self.focus[0] + self.size.0;
+                self.focus[3] -= 1.;
+                self.focus[2] += 1.;
             }
-            W => self.focus[0] = self.focus[0] + self.size.0,
+            W => self.focus[2] += 1.,
             NW => {
-                self.focus[1] = self.focus[1] + self.size.0;
-                self.focus[0] = self.focus[0] + self.size.0;
+                self.focus[3] += 1.;
+                self.focus[2] += 1.;
             }
             ResetZoom => {
-                // self.size = (1., 0.);
+                self.size = (3., 0.);
                 if self.input.repeat() {
+                    self.focus = [0.0, 0.0, 0.0, 0.0];
+                } else {
                     self.focus = [
-                        -(u16::MAX as f64) * self.size.0 + self.w,
-                        -(u16::MAX as f64) * self.size.0 + self.h,
+                        -(u16::MAX as f64) + self.w / 3.,
+                        -(u16::MAX as f64) + self.h / 3.,
                         0.0,
                         0.0,
                     ];
-                } else {
-                    self.focus = [0.0, 0.0, 0.0, 0.0];
                 }
             }
         };
@@ -209,10 +226,32 @@ impl App {
             match button {
                 LMB(x, y) => self.world.put(self.get_pos(x, y)),
                 RMB(x, y) => self.world.remove(&self.get_pos(x, y)),
-                MMB(x, y) => self.world.end(),
-                Drag(x1, y1, x2, y2) => {}
+                MMB(x, y) => {
+                    self.world.end();
+                    self.focus = [
+                        -(u16::MAX as f64 - self.w) / 2.,
+                        -(u16::MAX as f64 - self.h) / 2.,
+                        0.0,
+                        0.0,
+                    ];
+                }
             }
         }
+        #[allow(unused_variables)]
+        match self.input.motion() {
+            [Some(Scroll(scroll)), _] => {
+                const FACTOR: f64 = 1.3;
+                self.size.1 = scroll * self.size.0.abs().ln_1p().exp() * FACTOR;
+            }
+            // [None, Some(Drag(x1, y1, x2, y2))] => {}
+            _ => {}
+        }
+    }
+
+    pub fn render(
+        &mut self,
+        _args: &RenderArgs,
+    ) {
     }
 
     fn get_pos(
@@ -221,8 +260,8 @@ impl App {
         y: &f64,
     ) -> Tile {
         let tile = Tile::new(
-            ((x - self.focus[0]) / self.size.0) as T,
-            ((y - self.focus[1]) / self.size.0) as T,
+            (x / self.size.0 - self.focus[0]) as T,
+            (y / self.size.0 - self.focus[1]) as T,
         );
         tile
     }

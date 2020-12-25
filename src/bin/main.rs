@@ -7,7 +7,6 @@ use piston_window::{
     AdvancedWindow,
     EventLoop,
     IdleEvent,
-    MouseScrollEvent,
     OpenGL,
     PistonWindow,
     RenderEvent,
@@ -44,15 +43,6 @@ fn main() {
         });
         app.event(&e);
 
-        e.mouse_scroll(|d| {
-            app.size(d[1]);
-            // app.focus[2] =
-            //     app.focus[2] - d[1] * (2. * app.input.cursor[0] - app.w) /
-            // 10.; app.focus[3] =
-            //     app.focus[3] - d[1] * (2. * app.input.cursor[1] - app.h) /
-            // 10.;
-        });
-
         if let Some(_) = e.resize_args() {
             app.resize(&window);
         }
@@ -83,11 +73,16 @@ fn init(
         .for_folder("assets")
         .unwrap();
     let stats = false;
-    let focus = [0.0; 4];
     let Size {
         width: w,
         height: h,
     } = window.window.draw_size();
+    let focus = [
+        -(u16::MAX as f64 - w) / 2.,
+        -(u16::MAX as f64 - h) / 2.,
+        0.0,
+        0.0,
+    ];
     let ar = w / h;
     let world = World::new();
     let mut input = InputHandler::new();

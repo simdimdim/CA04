@@ -1,6 +1,6 @@
+use self::Rule::*;
 use super::field::Field;
 use crate::functions::{from_json, read_file};
-use Rule::*;
 
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;

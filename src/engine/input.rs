@@ -1,26 +1,28 @@
+use crate::{
+    engine::input::{Action::*, MouseB::*, MouseM::*},
+    functions::{from_json, read_file},
+};
+
 use piston_window::{
     Button,
     Event,
     MouseButton,
     MouseCursorEvent,
+    MouseScrollEvent,
     PressEvent,
     ReleaseEvent,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{json::JsonString, serde_as};
 use std::{
-    collections::{btree_map::Values, BTreeMap, BTreeSet, HashMap},
+    collections::{btree_map, BTreeMap, BTreeSet, HashMap},
     time::{Duration, Instant},
-};
-
-use crate::{
-    engine::input::{Action::*, MouseA::*},
-    functions::{from_json, read_file},
 };
 
 #[derive(Debug, Clone)]
 pub struct InputHandler {
-    mouse:      BTreeMap<Button, MouseA>,
+    mouse:      BTreeMap<Button, MouseB>,
+    motion:     [Option<MouseM>; 2],
     down:       BTreeSet<Button>,
     last:       BTreeSet<Button>,
     repeat:     bool,
@@ -29,6 +31,7 @@ pub struct InputHandler {
     time:       Instant,
     keymap:     HashMap<BTreeSet<Button>, Action>,
     pub cursor: [f64; 2],
+    scroll:     bool,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Action {
@@ -46,15 +49,21 @@ pub enum Action {
     NW,
 }
 #[derive(Copy, Clone, Debug)]
-pub enum MouseA {
+pub enum MouseB {
     LMB(f64, f64),
     RMB(f64, f64),
     MMB(f64, f64),
+}
+#[derive(Copy, Clone, Debug)]
+pub enum MouseM {
+    Scroll(f64),
     Drag(f64, f64, f64, f64),
 }
+
 impl InputHandler {
     pub fn new() -> Self {
         let mouse = BTreeMap::new();
+        let motion = [None; 2];
         let down = BTreeSet::new();
         let last = BTreeSet::new();
         let repeat = false;
@@ -63,8 +72,10 @@ impl InputHandler {
         let time = Instant::now();
         let keymap = HashMap::new();
         let cursor = [0.; 2];
+        let scroll = false;
         Self {
             mouse,
+            motion,
             down,
             last,
             repeat,
@@ -73,6 +84,7 @@ impl InputHandler {
             time,
             keymap,
             cursor,
+            scroll,
         }
     }
 
@@ -80,6 +92,10 @@ impl InputHandler {
         &mut self,
         e: &Event,
     ) -> &Action {
+        if self.scroll {
+            self.motion[0] = None;
+            self.scroll = false;
+        }
         match e.mouse_cursor(|xy| xy) {
             Some(pos) => {
                 self.cursor = pos;
@@ -90,10 +106,14 @@ impl InputHandler {
             None => {
                 if !self.mouse.is_empty() {
                     self.mouse.clear();
-                    self.drag = false
+                    self.drag = false;
                 }
             }
         };
+        e.mouse_scroll(|d| {
+            self.motion[0] = Some(Scroll(d[1]));
+            self.scroll = true;
+        });
         if let Some(button) = e.press_args() {
             if let Button::Keyboard(_) = button {
                 self.last.clear();
@@ -109,8 +129,6 @@ impl InputHandler {
                 if mouse_button == MouseButton::Right {
                     self.mouse
                         .insert(button, RMB(self.cursor[0], self.cursor[1]));
-                    // world.remove(world.grid.get_pos(cursor[0],
-                    // cursor[1]));
                 }
                 if mouse_button == MouseButton::Middle {
                     self.mouse
@@ -147,7 +165,11 @@ impl InputHandler {
         }
     }
 
-    pub fn mouse(&self) -> Values<'_, Button, MouseA> { self.mouse.values() }
+    pub fn mouse(&self) -> btree_map::Values<'_, Button, MouseB> {
+        self.mouse.values()
+    }
+
+    pub fn motion(&self) -> &[Option<MouseM>] { &self.motion }
 
     pub fn repeat(&self) -> bool { self.repeat }
 
@@ -167,6 +189,20 @@ impl InputHandler {
     }
 }
 
+impl PartialEq for MouseM {
+    fn eq(
+        &self,
+        other: &Self,
+    ) -> bool {
+        fn f(i: &MouseM) -> u8 {
+            match i {
+                MouseM::Scroll(_) => 0,
+                MouseM::Drag(_, _, _, _) => 1,
+            }
+        }
+        f(self) == f(&other)
+    }
+}
 #[serde_as]
 #[derive(Serialize, Deserialize)]
 struct KeyMap(

@@ -71,12 +71,11 @@ impl Tile {
         height: f64,
         offset_x: f64,
         offset_y: f64,
-        size: f64,
     ) -> bool {
-        self.x as f64 * size > -offset_x &&
-            self.y as f64 * size > -offset_y &&
-            self.x as f64 * size < -offset_x + width &&
-            self.y as f64 * size < -offset_y + height
+        (self.x as f64) >= -offset_x &&
+            (self.y as f64) >= -offset_y &&
+            (self.x as f64) < -offset_x + width &&
+            (self.y as f64) < -offset_y + height
     }
 
     pub fn xy(&self) -> (u16, u16) { (self.x, self.y) }
