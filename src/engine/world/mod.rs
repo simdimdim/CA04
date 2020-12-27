@@ -3,6 +3,7 @@ pub mod logic;
 pub mod tile;
 
 use self::tile::Tile;
+use logic::Rule::*;
 
 use indexmap::IndexSet;
 
@@ -18,17 +19,30 @@ impl World {
         Self { tiles, changed }
     }
 
-    // pub fn insert_mut(
-    //     &mut self,
-    //     tile: Tile,
-    // ) {
-    //     match self.tiles.entry(tile) {
-    //         hash_map::Entry::Occupied(e) => *e.into_mut() += tile,
-    //         hash_map::Entry::Vacant(e) => {
-    //             e.insert(tile);
-    //         }
-    //     }
-    // }
+    pub fn interract(
+        &mut self,
+        tile: Tile,
+    ) {
+        match self.tiles.get(&tile) {
+            Some(Tile {
+                x: _,
+                y: _,
+                members,
+                rule,
+                ..
+            }) => {
+                // *t.into_mut() *= tile;
+                match rule.unwrap_or(Collect) {
+                    Collect => {}
+                    Spread => {}
+                    Multiply => {}
+                }
+            }
+            None => {
+                self.tiles.insert(tile);
+            }
+        }
+    }
 
     pub fn insert(
         &mut self,

@@ -6,10 +6,11 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::collections::HashMap;
 
-#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Rule {
     Spread,
     Collect,
+    Multiply,
 }
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -26,6 +27,7 @@ impl LogicHandler {
             match (self.ruleset.get(field), self.ruleset.get(other)) {
                 (Some(&Spread), _) => {}
                 (Some(&Collect), _) => {}
+                (Some(&Multiply), _) => {}
                 (None, _) => {}
             }
         }
