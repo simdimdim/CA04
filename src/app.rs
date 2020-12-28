@@ -1,6 +1,6 @@
 use crate::engine::{
     input::{Action::*, MouseB::*, MouseM::*},
-    world::tile::Tile,
+    world::tile::Point,
     InputHandler,
     World,
 };
@@ -63,15 +63,15 @@ impl App {
     }
 
     fn _on_screen(&self) {
-        let _a: Vec<(u16, u16)> = self
+        let _a = self
             .world
             .tiles
             .par_iter()
             .filter(|&t| {
                 t.on_screen(self.w, self.h, self.focus[0], self.focus[1])
             })
-            .map(|a| a.xy())
-            .collect();
+            .map(|a| a.pos)
+            .collect::<Vec<Point>>();
     }
 
     pub fn draw(
@@ -111,11 +111,14 @@ impl App {
                 t.on_screen(self.w, self.h, self.focus[0], self.focus[1])
             })
             .for_each(|t| {
-                let rect =
-                    rectangle::square(t.x as f64 * size, t.y as f64 * size, size);
+                let rect = rectangle::square(
+                    t.pos.0 as f64 * size,
+                    t.pos.1 as f64 * size,
+                    size,
+                );
                 rectangle([1., 0., 0.2, 1.], rect, transform, g);
-                loc[2] = size * t.x as f64;
-                loc[3] = size * t.y as f64;
+                loc[2] = size * t.pos.0 as f64;
+                loc[3] = size * t.pos.1 as f64;
                 if ((loc[0].powf(2.) + loc[1].powf(2.)) -
                     (loc[2].powf(2.) + loc[3].powf(2.)))
                 .abs() >
@@ -258,12 +261,11 @@ impl App {
         &self,
         x: &f64,
         y: &f64,
-    ) -> Tile {
-        let tile = Tile::new(
+    ) -> Point {
+        Point(
             (x / self.size.0 - self.focus[0]) as T,
             (y / self.size.0 - self.focus[1]) as T,
-        );
-        tile
+        )
     }
 
     fn stats<'a>(

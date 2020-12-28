@@ -33,7 +33,7 @@ piston_window = "0.116.0"
 pistoncore-window = "0.47.0"
 
 indexmap = { version = "1.6.1", features = ["rayon"] }
-itertools = "0.9.0"
+itertools = "0.10.0"
 lazy_static = "1.4.0"
 rand = "0.8.0"
 rayon = "1.5.0"

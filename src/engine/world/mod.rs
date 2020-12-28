@@ -2,7 +2,7 @@ pub mod field;
 pub mod logic;
 pub mod tile;
 
-use self::tile::Tile;
+use self::tile::{Point, Tile};
 use logic::Rule::*;
 
 use indexmap::IndexSet;
@@ -25,9 +25,8 @@ impl World {
     ) {
         match self.tiles.get(&tile) {
             Some(Tile {
-                x: _,
-                y: _,
-                members,
+                pos: _,
+                members: _,
                 rule,
                 ..
             }) => {
@@ -53,17 +52,17 @@ impl World {
 
     pub fn remove(
         &mut self,
-        tile: &Tile,
+        pos: &Point,
     ) {
-        self.tiles.remove(tile);
+        self.tiles.remove(pos);
         self.changed = true;
     }
 
     pub fn put(
         &mut self,
-        tile: Tile,
+        pos: Point,
     ) {
-        let mut t = tile;
+        let mut t = Tile::new(&pos);
         self.tiles.insert(t.test());
         self.changed = true;
     }
@@ -71,7 +70,7 @@ impl World {
     pub fn test(&mut self) -> &mut Self {
         for x in u16::MAX - 100..u16::MAX {
             for y in u16::MAX - 100..u16::MAX {
-                self.insert(Tile::new(x, y).test());
+                self.insert(Tile::new(&Point(x, y)).test());
             }
         }
         self.changed = true;

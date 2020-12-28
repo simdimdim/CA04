@@ -73,7 +73,7 @@ impl AddAssign for Field {
         &mut self,
         other: Self,
     ) {
-        if *self == other {
+        if self == &other {
             *self = Self(self.0, self.1.saturating_add(other.1))
         }
     }
@@ -83,7 +83,7 @@ impl SubAssign for Field {
         &mut self,
         other: Self,
     ) {
-        if *self == other {
+        if self == &other {
             *self = Self(self.0, self.1.saturating_sub(other.1))
         }
     }

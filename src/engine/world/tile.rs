@@ -1,34 +1,41 @@
 use super::{field::Field, logic::Rule};
 
-use hilbert::Point;
-use indexmap::IndexSet;
+use hilbert::Point as HPoint;
+use indexmap::{Equivalent, IndexSet};
 use num_bigint::BigUint;
+use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
     convert::TryFrom,
     hash::{Hash, Hasher},
 };
 
+#[derive(Eq, Hash, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
+pub struct Point(pub u16, pub u16);
+impl Equivalent<Tile> for Point {
+    fn equivalent(
+        &self,
+        key: &Tile,
+    ) -> bool {
+        self == &key.pos
+    }
+}
+
 #[derive(Eq, Clone, Debug)]
 pub struct Tile {
-    pub x:       u16,
-    pub y:       u16,
+    pub pos:     Point,
     pub members: u16,
     pub rule:    Option<Rule>,
     fields:      IndexSet<Field>,
 }
 
 impl Tile {
-    pub fn new(
-        x: u16,
-        y: u16,
-    ) -> Self {
+    pub fn new(&pos: &Point) -> Self {
         let members = 0;
         let fields = IndexSet::new();
         let rule = None;
         Self {
-            x,
-            y,
+            pos,
             members,
             rule,
             fields,
@@ -57,7 +64,7 @@ impl Tile {
         &self,
         &i: &usize,
     ) -> u64 {
-        let a = Point::new(i, &[self.x as u32, self.y as u32])
+        let a = HPoint::new(i, &[self.pos.0 as u32, self.pos.1 as u32])
             .hilbert_transform(32)
             .to_radix_be(32);
 
@@ -72,13 +79,11 @@ impl Tile {
         offset_x: f64,
         offset_y: f64,
     ) -> bool {
-        (self.x as f64) >= -offset_x &&
-            (self.y as f64) >= -offset_y &&
-            (self.x as f64) < -offset_x + width &&
-            (self.y as f64) < -offset_y + height
+        (self.pos.0 as f64) >= -offset_x &&
+            (self.pos.1 as f64) >= -offset_y &&
+            (self.pos.0 as f64) < -offset_x + width &&
+            (self.pos.1 as f64) < -offset_y + height
     }
-
-    pub fn xy(&self) -> (u16, u16) { (self.x, self.y) }
 
     pub fn test(&mut self) -> Self {
         use rand::Rng;
@@ -110,7 +115,7 @@ impl PartialEq for Tile {
         &self,
         other: &Self,
     ) -> bool {
-        self.x == other.x
+        self.pos == other.pos
     }
 }
 impl Hash for Tile {
@@ -118,7 +123,14 @@ impl Hash for Tile {
         &self,
         state: &mut H,
     ) {
-        self.x.hash(state);
-        self.y.hash(state);
+        self.pos.hash(state);
+    }
+}
+impl Equivalent<Point> for Tile {
+    fn equivalent(
+        &self,
+        key: &Point,
+    ) -> bool {
+        &self.pos == key
     }
 }
