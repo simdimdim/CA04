@@ -78,8 +78,8 @@ fn init(
         height: h,
     } = window.window.draw_size();
     let focus = [
-        -(u16::MAX as f64 - w) / 2.,
-        -(u16::MAX as f64 - h) / 2.,
+        -(u16::MAX as f64 - w) * 32. / 2.,
+        -(u16::MAX as f64 - h) * 32. / 2.,
         0.0,
         0.0,
     ];

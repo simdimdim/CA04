@@ -32,19 +32,20 @@ piston2d-graphics = "0.39.0"
 piston_window = "0.116.0"
 pistoncore-window = "0.47.0"
 
-indexmap = { version = "1.6.1", features = ["rayon"] }
+array-macro = "2.0.0"
+indexmap = {version = "1.6.1", features = ["rayon"]}
 itertools = "0.10.0"
 lazy_static = "1.4.0"
 rand = "0.8.0"
 rayon = "1.5.0"
-serde = { version = "1.0.118", features = ["derive"] }
-serde_json = "1.0.60"
-serde_with = { version = "1.6.0", features = ["json"] }
+serde = {version = "1.0.118", features = ["derive"]}
+serde_json = "1.0.61"
+serde_with = {version = "1.6.0", features = ["json"]}
 
 config = "0.10.1"
 find_folder = "0.3.0"
 hilbert = "0.1.1"
-nalgebra = "0.23.2"
+nalgebra = "0.24.0"
 num-bigint = "0.3.1"
 
 camera_controllers = "0.32.0"

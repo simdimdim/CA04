@@ -1,36 +1,24 @@
-use super::{field::Field, logic::Rule};
+use super::{field::Field, logic::Rule, Point};
 
 use hilbert::Point as HPoint;
 use indexmap::{Equivalent, IndexSet};
 use num_bigint::BigUint;
-use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
     convert::TryFrom,
     hash::{Hash, Hasher},
 };
 
-#[derive(Eq, Hash, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct Point(pub u16, pub u16);
-impl Equivalent<Tile> for Point {
-    fn equivalent(
-        &self,
-        key: &Tile,
-    ) -> bool {
-        self == &key.pos
-    }
-}
-
-#[derive(Eq, Clone, Debug)]
+#[derive(Eq, Clone, Debug, Default)]
 pub struct Tile {
-    pub pos:     Point,
+    pub pos:     Point<u8>,
     pub members: u16,
     pub rule:    Option<Rule>,
     fields:      IndexSet<Field>,
 }
 
 impl Tile {
-    pub fn new(&pos: &Point) -> Self {
+    pub fn new(&pos: &Point<u8>) -> Self {
         let members = 0;
         let fields = IndexSet::new();
         let rule = None;
@@ -72,19 +60,6 @@ impl Tile {
             .expect("Tile hilbert index overflow?")
     }
 
-    pub fn on_screen(
-        &self,
-        width: f64,
-        height: f64,
-        offset_x: f64,
-        offset_y: f64,
-    ) -> bool {
-        (self.pos.0 as f64) >= -offset_x &&
-            (self.pos.1 as f64) >= -offset_y &&
-            (self.pos.0 as f64) < -offset_x + width &&
-            (self.pos.1 as f64) < -offset_y + height
-    }
-
     pub fn test(&mut self) -> Self {
         use rand::Rng;
         for i in 0..4 {
@@ -92,6 +67,13 @@ impl Tile {
         }
         self.clone()
     }
+
+    pub fn color(&self) -> [f32; 4] {
+        const C: [f32; 4] = [1., 0., 0.2, 1.];
+        C
+    }
+
+    pub fn pos(&self) -> usize { Point::pos(&self.pos) }
 }
 
 impl Ord for Tile {
@@ -126,11 +108,19 @@ impl Hash for Tile {
         self.pos.hash(state);
     }
 }
-impl Equivalent<Point> for Tile {
+impl Equivalent<Point<u8>> for Tile {
     fn equivalent(
         &self,
-        key: &Point,
+        key: &Point<u8>,
     ) -> bool {
         &self.pos == key
+    }
+}
+impl Equivalent<Tile> for Point<u8> {
+    fn equivalent(
+        &self,
+        key: &Tile,
+    ) -> bool {
+        self == &key.pos
     }
 }

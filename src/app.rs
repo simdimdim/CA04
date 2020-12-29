@@ -1,6 +1,6 @@
 use crate::engine::{
     input::{Action::*, MouseB::*, MouseM::*},
-    world::tile::Point,
+    world::Point,
     InputHandler,
     World,
 };
@@ -18,7 +18,6 @@ use graphics::{
     Transformed,
 };
 use piston_window::{Event, OpenGL, PistonWindow, RenderArgs, Size, Window};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use sdl2_window::Sdl2Window;
 use std::path::PathBuf;
 
@@ -38,7 +37,7 @@ pub struct App {
     pub input:          InputHandler,
     pub size:           (f64, f64),
 }
-type T = u16;
+
 impl App {
     pub fn toggle_stats(&mut self) { self.stats = !self.stats; }
 
@@ -60,18 +59,6 @@ impl App {
     ) {
         const FACTOR: f64 = 1.3;
         self.size.1 = size * self.size.0.abs().ln_1p().exp() * FACTOR;
-    }
-
-    fn _on_screen(&self) {
-        let _a = self
-            .world
-            .tiles
-            .par_iter()
-            .filter(|&t| {
-                t.on_screen(self.w, self.h, self.focus[0], self.focus[1])
-            })
-            .map(|a| a.pos)
-            .collect::<Vec<Point>>();
     }
 
     pub fn draw(
@@ -104,34 +91,31 @@ impl App {
 
         let con = Line::new([1., 1., 1., 0.8], 0.5);
         let mut loc = [0f64; 4];
+        let camera = (
+            (-self.focus[0] / 32.) as u16,
+            (-self.focus[1] / 32.) as u16,
+            (self.w / (32. * size)) as u16 + 3,
+            (self.h / (32. * size)) as u16 + 3,
+        );
         self.world
-            .tiles
+            .chunks
             .iter()
-            .filter(|&t| {
-                t.on_screen(self.w, self.h, self.focus[0], self.focus[1])
-            })
-            .for_each(|t| {
-                let rect = rectangle::square(
-                    t.pos.0 as f64 * size,
-                    t.pos.1 as f64 * size,
-                    size,
-                );
-                rectangle([1., 0., 0.2, 1.], rect, transform, g);
-                loc[2] = size * t.pos.0 as f64;
-                loc[3] = size * t.pos.1 as f64;
-                if ((loc[0].powf(2.) + loc[1].powf(2.)) -
-                    (loc[2].powf(2.) + loc[3].powf(2.)))
-                .abs() >
-                    size.powf(2.) * 2.
-                {
+            .filter(|&(_, t)| t.on_screen(camera))
+            .for_each(|(&p, chunk)| {
+                chunk.tiles.iter().filter(|&t| t.members > 0).for_each(|t| {
+                    let tile = (p * 32. + t.pos) * size;
+                    let rect = rectangle::square(tile.0, tile.1, size);
+                    rectangle(t.color(), rect, transform, g);
+                    loc[2] = tile.0;
+                    loc[3] = tile.1;
                     con.draw(loc, &c.draw_state, transform, g);
-                }
-                loc.rotate_left(2);
+                    loc.rotate_left(2);
+                })
             });
 
         let cell_edge = Line::new([1., 0.3, 0., 1.], 1.);
         const TOP: f64 = 0.;
-        let x2 = (u16::MAX as f64 + 1.) * size;
+        let x2 = (u16::MAX as f64 + 1.) * 32. * size - 1.;
         cell_edge.draw([TOP, TOP, TOP, x2], &c.draw_state, transform, g);
         cell_edge.draw([TOP, TOP, x2, TOP], &c.draw_state, transform, g);
         cell_edge.draw([TOP, x2, x2, x2], &c.draw_state, transform, g);
@@ -215,8 +199,8 @@ impl App {
                     self.focus = [0.0, 0.0, 0.0, 0.0];
                 } else {
                     self.focus = [
-                        -(u16::MAX as f64) + self.w / 3.,
-                        -(u16::MAX as f64) + self.h / 3.,
+                        -(u16::MAX as f64) * 32. + self.w / 3.,
+                        -(u16::MAX as f64) * 32. + self.h / 3.,
                         0.0,
                         0.0,
                     ];
@@ -227,13 +211,13 @@ impl App {
         #[allow(unused_variables)]
         for button in self.input.mouse() {
             match button {
-                LMB(x, y) => self.world.put(self.get_pos(x, y)),
+                LMB(x, y) => self.world.put(&self.get_pos(x, y)),
                 RMB(x, y) => self.world.remove(&self.get_pos(x, y)),
                 MMB(x, y) => {
                     self.world.end();
                     self.focus = [
-                        -(u16::MAX as f64 - self.w) / 2.,
-                        -(u16::MAX as f64 - self.h) / 2.,
+                        -(u16::MAX as f64 - self.w) * 32. / 2.,
+                        -(u16::MAX as f64 - self.h) * 32. / 2.,
                         0.0,
                         0.0,
                     ];
@@ -261,11 +245,14 @@ impl App {
         &self,
         x: &f64,
         y: &f64,
-    ) -> Point {
-        Point(
-            (x / self.size.0 - self.focus[0]) as T,
-            (y / self.size.0 - self.focus[1]) as T,
-        )
+    ) -> Point<Point<u16>, Point<u8>> {
+        let x = ((x / self.size.0) - self.focus[0]) / 32.;
+        let y = ((y / self.size.0) - self.focus[1]) / 32.;
+        let p1 = Point(x as u16, y as u16);
+        let p2 = Point((x.fract() * 32.) as u8, (y.fract() * 32.) as u8);
+        let p = Point(p1, p2);
+        dbg!(&p);
+        p
     }
 
     fn stats<'a>(
@@ -299,8 +286,5 @@ impl App {
             .unwrap();
     }
 
-    pub fn exit(&mut self) {
-        self.world.end();
-        self.world.test();
-    }
+    pub fn exit(&mut self) { self.world.end(); }
 }
