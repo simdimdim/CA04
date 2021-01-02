@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use ca04::{
     engine::{InputHandler, World},
     App,
@@ -33,7 +35,7 @@ fn main() {
         .load_font(app.assets.join("FiraSans-Regular.ttf"))
         .unwrap();
     window.set_capture_cursor(app.capture_cursor);
-    window.set_max_fps((app.ups * 4.) as u64);
+    window.set_max_fps(max(120, (app.ups * 4.) as u64));
     window.set_ups(app.ups as u64);
     while let Some(e) = window.next() {
         window.draw_2d(&e, |c, g, device| {
@@ -67,7 +69,7 @@ fn init(
 ) -> App {
     let title = title.to_string();
     let fps = fps_counter::FPSCounter::new();
-    let ups = 60.0;
+    let ups = 2.0;
     let capture_cursor = false;
     let assets = find_folder::Search::ParentsThenKids(3, 3)
         .for_folder("assets")
@@ -78,8 +80,8 @@ fn init(
         height: h,
     } = window.window.draw_size();
     let focus = [
-        -(u16::MAX as f64 - w) * 32. / 2.,
-        -(u16::MAX as f64 - h) * 32. / 2.,
+        -(u16::MAX as f64 - w) / 2.,
+        -(u16::MAX as f64 - h) / 2.,
         0.0,
         0.0,
     ];

@@ -89,13 +89,13 @@ impl App {
             .transform
             .trans(self.focus[0] * size, self.focus[1] * size);
 
-        let con = Line::new([1., 1., 1., 0.8], 0.5);
-        let mut loc = [0f64; 4];
+        // let con = Line::new([1., 1., 1., 0.8], 0.5);
+        // let mut loc = [0f64; 4];
         let camera = (
-            (-self.focus[0] / 32.) as u16,
-            (-self.focus[1] / 32.) as u16,
-            (self.w / (32. * size)) as u16 + 3,
-            (self.h / (32. * size)) as u16 + 3,
+            (-self.focus[0]) as u16,
+            (-self.focus[1]) as u16,
+            (self.w / size) as u16 + 3,
+            (self.h / size) as u16 + 3,
         );
         self.world
             .chunks
@@ -103,33 +103,38 @@ impl App {
             .filter(|&(_, t)| t.on_screen(camera))
             .for_each(|(&p, chunk)| {
                 chunk.tiles.iter().filter(|&t| t.members > 0).for_each(|t| {
-                    let tile = (p * 32. + t.pos) * size;
+                    let tile = (Point::from(p) + t.pos) * size;
                     let rect = rectangle::square(tile.0, tile.1, size);
                     rectangle(t.color(), rect, transform, g);
-                    loc[2] = tile.0;
-                    loc[3] = tile.1;
-                    con.draw(loc, &c.draw_state, transform, g);
-                    loc.rotate_left(2);
+                    // loc[2] = tile.0;
+                    // loc[3] = tile.1;
+                    // con.draw(loc, &c.draw_state, transform, g);
+                    // loc.rotate_left(2);
                 })
             });
 
         let cell_edge = Line::new([1., 0.3, 0., 1.], 1.);
         const TOP: f64 = 0.;
-        let x2 = (u16::MAX as f64 + 1.) * 32. * size - 1.;
+        let x2 = (u16::MAX as f64 + 1.) * size - 1.;
         cell_edge.draw([TOP, TOP, TOP, x2], &c.draw_state, transform, g);
         cell_edge.draw([TOP, TOP, x2, TOP], &c.draw_state, transform, g);
         cell_edge.draw([TOP, x2, x2, x2], &c.draw_state, transform, g);
         cell_edge.draw([x2, TOP, x2, x2], &c.draw_state, transform, g);
+        let chu = size * 32.;
+        cell_edge.draw([TOP, TOP, TOP, chu], &c.draw_state, transform, g);
+        cell_edge.draw([TOP, TOP, chu, TOP], &c.draw_state, transform, g);
+        cell_edge.draw([TOP, chu, chu, chu], &c.draw_state, transform, g);
+        cell_edge.draw([chu, TOP, chu, chu], &c.draw_state, transform, g);
     }
 
     pub fn update(&mut self) {
-        let step = 4. * self.size.1 / self.ups;
+        let step = self.size.1 / self.ups;
         self.size.0 = if self.size.0 + step > 1. {
             self.size.0 + step
         } else {
             1.
         };
-        self.size.1 = if step.abs() > 4. / self.ups {
+        self.size.1 = if step.abs() > self.ups.recip() {
             self.size.1 - step
         } else {
             0.
@@ -162,6 +167,7 @@ impl App {
         //     };
         // }
         // dbg!(self.focus[2]);
+
         self.world.update()
     }
 
@@ -173,34 +179,34 @@ impl App {
             Pass => {}
             Exit => self.exit(),
             Stats => self.stats = self.input.repeat(),
-            N => self.focus[3] += 1.,
+            N => self.focus[3] += self.size.0.recip() * 10.,
             NE => {
-                self.focus[3] += 1.;
-                self.focus[2] -= 1.;
+                self.focus[3] += self.size.0.recip() * 10.;
+                self.focus[2] -= self.size.0.recip() * 10.;
             }
-            E => self.focus[2] -= 1.,
+            E => self.focus[2] -= self.size.0.recip() * 10.,
             SE => {
-                self.focus[3] -= 1.;
-                self.focus[2] -= 1.;
+                self.focus[3] -= self.size.0.recip() * 10.;
+                self.focus[2] -= self.size.0.recip() * 10.;
             }
-            S => self.focus[3] -= 1.,
+            S => self.focus[3] -= self.size.0.recip() * 10.,
             SW => {
-                self.focus[3] -= 1.;
-                self.focus[2] += 1.;
+                self.focus[3] -= self.size.0.recip() * 10.;
+                self.focus[2] += self.size.0.recip() * 10.;
             }
-            W => self.focus[2] += 1.,
+            W => self.focus[2] += self.size.0.recip() * 10.,
             NW => {
-                self.focus[3] += 1.;
-                self.focus[2] += 1.;
+                self.focus[3] += self.size.0.recip() * 10.;
+                self.focus[2] += self.size.0.recip() * 10.;
             }
             ResetZoom => {
-                self.size = (3., 0.);
+                self.size = (20., 0.);
                 if self.input.repeat() {
                     self.focus = [0.0, 0.0, 0.0, 0.0];
                 } else {
                     self.focus = [
-                        -(u16::MAX as f64) * 32. + self.w / 3.,
-                        -(u16::MAX as f64) * 32. + self.h / 3.,
+                        -(u16::MAX as f64) + self.w / (self.size.0),
+                        -(u16::MAX as f64) + self.h / (self.size.0),
                         0.0,
                         0.0,
                     ];
@@ -216,8 +222,8 @@ impl App {
                 MMB(x, y) => {
                     self.world.end();
                     self.focus = [
-                        -(u16::MAX as f64 - self.w) * 32. / 2.,
-                        -(u16::MAX as f64 - self.h) * 32. / 2.,
+                        -(u16::MAX as f64 - self.w) / 2.,
+                        -(u16::MAX as f64 - self.h) / 2.,
                         0.0,
                         0.0,
                     ];
@@ -245,14 +251,15 @@ impl App {
         &self,
         x: &f64,
         y: &f64,
-    ) -> Point<Point<u16>, Point<u8>> {
-        let x = ((x / self.size.0) - self.focus[0]) / 32.;
-        let y = ((y / self.size.0) - self.focus[1]) / 32.;
-        let p1 = Point(x as u16, y as u16);
-        let p2 = Point((x.fract() * 32.) as u8, (y.fract() * 32.) as u8);
-        let p = Point(p1, p2);
-        dbg!(&p);
-        p
+    ) -> Point<Point<u16>, usize> {
+        Point(
+            Point(
+                (self.size.0.recip() * x - self.focus[0]) as u16,
+                (self.size.0.recip() * y - self.focus[1]) as u16,
+            ),
+            ((32. * x.fract()).trunc() + ((32. * y.fract()).trunc() * 32.))
+                .trunc() as usize,
+        )
     }
 
     fn stats<'a>(
