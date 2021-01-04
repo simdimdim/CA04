@@ -69,7 +69,7 @@ fn init(
 ) -> App {
     let title = title.to_string();
     let fps = fps_counter::FPSCounter::new();
-    let ups = 2.0;
+    let ups = 60.0;
     let capture_cursor = false;
     let assets = find_folder::Search::ParentsThenKids(3, 3)
         .for_folder("assets")

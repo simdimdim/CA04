@@ -47,8 +47,9 @@ impl Add for Field {
         self,
         rhs: Self,
     ) -> Self::Output {
-        if self == rhs {
-            Self(self.0, self.1.saturating_add(rhs.1))
+        if self.eq(&rhs) {
+            let out = Self(self.0, self.1.saturating_add(rhs.1));
+            out
         } else {
             self
         }

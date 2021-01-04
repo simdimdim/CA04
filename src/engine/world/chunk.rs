@@ -20,12 +20,7 @@ pub struct Chunk {
 
 impl Default for Chunk {
     fn default() -> Self {
-        let tiles = array![
-            x=>Tile::new(
-                &Point(
-                    (x/32) as u8,
-                    ((x as f64/32.).fract() * 32. )as u8))
-            ; 1024];
+        let tiles = array![x=>Tile::new(&Point::from(x)); 1024];
         let border = array![None; 128];
         let changed = false;
         Self {
@@ -39,12 +34,13 @@ impl Default for Chunk {
 impl Chunk {
     pub fn on_screen(
         &self,
-        camera: (u16, u16, u16, u16),
+        camera: (f64, f64, f64, f64),
     ) -> bool {
-        self.pos.0 >= camera.0.saturating_sub(camera.2) &&
-            self.pos.1 >= camera.1.saturating_sub(camera.3) &&
-            self.pos.0 <= camera.0.saturating_add(camera.2) &&
-            self.pos.1 <= camera.1.saturating_add(camera.3)
+        self.pos.0 >= (camera.0 - camera.2) as u16 &&
+            self.pos.1 >= (camera.1 - camera.3) as u16 &&
+            self.pos.0 <= (camera.0 + camera.2) as u16 &&
+            self.pos.1 <= (camera.1 + camera.3) as u16
+        // true
     }
 
     pub fn hilbert_index(

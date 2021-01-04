@@ -1,12 +1,14 @@
 use super::{field::Field, logic::Rule, Point};
 
 use hilbert::Point as HPoint;
-use indexmap::{Equivalent, IndexSet};
+use indexmap::Equivalent;
 use num_bigint::BigUint;
 use std::{
     cmp::{min, Ordering},
+    collections::HashSet,
     convert::TryFrom,
     hash::{Hash, Hasher},
+    ops::{Add, AddAssign},
 };
 
 #[derive(Eq, Clone, Debug, Default)]
@@ -14,13 +16,13 @@ pub struct Tile {
     pub pos:     Point<u8>,
     pub members: u16,
     pub rule:    Option<Rule>,
-    fields:      IndexSet<Field>,
+    fields:      HashSet<Field>,
 }
 
 impl Tile {
     pub fn new(&pos: &Point<u8>) -> Self {
         let members = 0;
-        let fields = IndexSet::new();
+        let fields = HashSet::new();
         let rule = None;
         Self {
             pos,
@@ -34,13 +36,14 @@ impl Tile {
         &mut self,
         field: Field,
     ) {
-        if self.fields.contains(&field) {
-            let nf = *self.fields.get(&field).unwrap() + field;
-            self.fields.insert(nf);
-            // dbg!(nf);
-        } else {
-            self.fields.insert(field);
-            self.members += 1;
+        match self.fields.get(&field) {
+            Some(&f) => {
+                self.fields.insert(f + field);
+            }
+            None => {
+                self.fields.insert(field);
+                self.members += 1;
+            }
         }
     }
 
@@ -80,23 +83,16 @@ impl Tile {
                 .fields
                 .iter()
                 .take(self.fields.len())
-                .map(|&a| a.1)
-                .collect::<Vec<u32>>();
-            let s = min(v.len(), 3);
-            let v = v
-                .iter()
-                .map(|&a| a as f32 / *v[0..s].iter().max().unwrap() as f32)
+                .map(|&a| a.1 as f32)
                 .collect::<Vec<f32>>();
+            let s = min(v.len(), 3);
             let m = v[0..s].iter().fold(0f32, |mut acc, &a| {
-                if a > acc {
-                    acc = a;
-                };
+                acc += a;
                 acc
             });
+            // dbg!(&m);
             c[1..=s].copy_from_slice(&v[0..s]);
-            c[1..=s].iter_mut().for_each(|a| {
-                *a /= m;
-            });
+            c[1..=s].iter_mut().for_each(|a| *a = (*a % 255.) / 255.);
         }
         c
     }
@@ -150,5 +146,41 @@ impl Equivalent<Tile> for Point<u8> {
         key: &Tile,
     ) -> bool {
         self == &key.pos
+    }
+}
+impl Add<Field> for Tile {
+    type Output = Tile;
+
+    fn add(
+        self,
+        rhs: Field,
+    ) -> Self::Output {
+        let mut s = self;
+        match s.fields.get(&rhs) {
+            Some(&f) => {
+                s.fields.replace(f + rhs);
+            }
+            None => {
+                s.fields.insert(rhs);
+                s.members += 1;
+            }
+        }
+        s
+    }
+}
+impl AddAssign<Field> for Tile {
+    fn add_assign(
+        &mut self,
+        rhs: Field,
+    ) {
+        match self.fields.get(&rhs) {
+            Some(&f) => {
+                self.fields.replace(f + rhs);
+            }
+            None => {
+                self.fields.insert(rhs);
+                self.members += 1;
+            }
+        }
     }
 }

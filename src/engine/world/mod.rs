@@ -74,160 +74,139 @@ impl World {
         coords: &Point<Point<u16>, usize>,
     ) {
         if let Some(chunk) = self.chunks.get_mut(&coords.0) {
-            chunk.tiles[coords.1].pos = coords.1.into();
-            chunk.tiles[coords.1].add_field(Field(1, 10));
+            chunk.tiles[coords.1] += Field(1, 10);
+            dbg!(&chunk.tiles[coords.1]);
         } else {
             let mut chunk = Chunk::default();
             chunk.pos = coords.0;
-            chunk.tiles[coords.1].pos = coords.1.into();
-            chunk.tiles[coords.1].add_field(Field(1, 10));
+            chunk.tiles[coords.1] += Field(1, 10);
             self.chunks.insert(coords.0, chunk);
             self.changed = true;
         }
     }
 
     pub fn update(&mut self) {
-        let mut nb = HashSet::new();
+        let mut neighbours = HashSet::new();
         self.chunks.iter().for_each(|(&p, chunk)| {
             // .filter(|&(_, t)| t.changed)
-            nb = chunk.tiles.iter().enumerate().fold(
-                HashSet::new(),
-                |mut neighbours, (i, _)| {
-                    match (i / 32, i % 32) {
-                        // top left
-                        (0, 0) => {
-                            // neighbours.insert(Point(p.neighb(-1, -1),
-                            // 1023));
-                            // neighbours.insert(Point(p.neighb(0, -1), 992));
-                            // neighbours.insert(Point(p.neighb(0, -1), 993));
-
-                            // neighbours.insert(Point(p.neighb(-1, 0), 63));
-                            neighbours.insert(Point(p, i + 1));
-                            // neighbours.insert(Point(p.neighb(-1, 0), 31));
-                            // neighbours.insert(Point(p, i + 32));
-                            // neighbours.insert(Point(p, i + 33));
-                            neighbours
-                        }
-                        // top right
-                        (00, 31) => {
-                            // neighbours.insert(Point(p.neighb(0, -1),
-                            // 1022));
-                            // neighbours.insert(Point(p.neighb(0, -1),
-                            // 1023));
-                            // neighbours.insert(Point(p.neighb(1, -1), 992));
-                            // neighbours.insert(Point(p, i - 1));
-                            neighbours.insert(Point(p.neighb(1, 0), 0));
-                            // neighbours.insert(Point(p, i + 31));
-                            // neighbours.insert(Point(p, i + 32));
-                            // neighbours.insert(Point(p.neighb(1, 0), 32));
-                            neighbours
-                        }
-                        // bottom left
-                        (31, 00) => {
-                            // neighbours.insert(Point(p.neighb(-1, 0), 991));
-                            // neighbours.insert(Point(p, i - 32));
-                            // neighbours.insert(Point(p, i - 31));
-                            // neighbours.insert(Point(p.neighb(-1, 0),
-                            // 1023));
-                            neighbours.insert(Point(p, i + 1));
-                            // neighbours.insert(Point(p.neighb(-1, 1), 1));
-                            // neighbours.insert(Point(p.neighb(0, 1), 0));
-                            // neighbours.insert(Point(p.neighb(0, 1), 31));
-                            neighbours
-                        }
-                        // bottom right
-                        (31, 31) => {
-                            // neighbours.insert(Point(p, i - 33));
-                            // neighbours.insert(Point(p, i - 32));
-                            // neighbours.insert(Point(p.neighb(1, 0), 960));
-                            // neighbours.insert(Point(p, i - 1));
-                            neighbours.insert(Point(p.neighb(1, 0), 992));
-                            // neighbours.insert(Point(p.neighb(0, 1), 1022));
-                            // neighbours.insert(Point(p.neighb(0, 1), 1023));
-                            // neighbours.insert(Point(p.neighb(1, 1), 0));
-                            neighbours
-                        }
-                        // top
-                        (00, _) => {
-                            // neighbours
-                            //     .insert(Point(p.neighb(0, -1), 991 + i));
-                            // neighbours
-                            //     .insert(Point(p.neighb(0, -1), 992 + i));
-                            // neighbours
-                            //     .insert(Point(p.neighb(0, -1), 993 + i));
-                            // neighbours.insert(Point(p, i - 1));
-                            neighbours.insert(Point(p, i + 1));
-                            // neighbours.insert(Point(p, i + 31));
-                            // neighbours.insert(Point(p, i + 32));
-                            // neighbours.insert(Point(p, i + 33));
-                            neighbours
-                        }
-                        // left
-                        (_, 00) => {
-                            // neighbours.insert(Point(p.neighb(-1, 0), i -
-                            // 1));
-                            // neighbours.insert(Point(p, i - 32));
-                            // neighbours.insert(Point(p, i - 31));
-                            // neighbours.insert(Point(p.neighb(-1, 0), i +
-                            // 31));
-                            neighbours.insert(Point(p, i + 1));
-                            // neighbours.insert(Point(p.neighb(-1, 0), i +
-                            // 63));
-                            // neighbours.insert(Point(p, i + 32));
-                            // neighbours.insert(Point(p, i + 33));
-                            neighbours
-                        }
-                        // right
-                        (_, 31) => {
-                            // neighbours.insert(Point(p, i - 33));
-                            // neighbours.insert(Point(p, i - 32));
-                            // neighbours.insert(Point(p.neighb(1, 0), i -
-                            // 63));
-                            // neighbours.insert(Point(p, i - 1));
-                            neighbours.insert(Point(p.neighb(1, 0), i - 31));
-                            // neighbours.insert(Point(p, i + 31));
-                            // neighbours.insert(Point(p, i + 32));
-                            // neighbours.insert(Point(p.neighb(1, 0), i +
-                            // 1));
-                            neighbours
-                        }
-                        // bottom
-                        (31, _) => {
-                            // neighbours.insert(Point(p, i - 33));
-                            // neighbours.insert(Point(p, i - 32));
-                            // neighbours.insert(Point(p, i - 31));
-                            // neighbours.insert(Point(p, i - 1));
-                            neighbours.insert(Point(p, i + 1));
-                            // neighbours.insert(Point(p.neighb(0, 1), i -
-                            // 993));
-                            // neighbours.insert(Point(p.neighb(0, 1), i -
-                            // 992));
-                            // neighbours.insert(Point(p.neighb(0, 1), i -
-                            // 991));
-                            neighbours
-                        }
-                        // inside
-                        (_, _) => {
-                            // neighbours.insert(Point(p, i - 33));
-                            // neighbours.insert(Point(p, i - 32));
-                            // neighbours.insert(Point(p, i - 31));
-                            // neighbours.insert(Point(p, i - 1));
-                            neighbours.insert(Point(p, i + 1));
-                            // neighbours.insert(Point(p, i + 31));
-                            // neighbours.insert(Point(p, i + 32));
-                            // neighbours.insert(Point(p, i + 33));
-                            neighbours
-                        }
+            chunk.tiles.iter().enumerate().for_each(|(i, t)| {
+                match (i / 32, i % 32, t.members != 0) {
+                    // top left
+                    (0, 0, true) => {
+                        neighbours.insert(Point(p.nx(-1, -1), 1023));
+                        neighbours.insert(Point(p.nx(0, -1), 992));
+                        neighbours.insert(Point(p.nx(0, -1), 993));
+                        neighbours.insert(Point(p.nx(-1, 0), 63));
+                        neighbours.insert(Point(p, i + 1));
+                        neighbours.insert(Point(p.nx(-1, 0), 31));
+                        neighbours.insert(Point(p, i + 32));
+                        neighbours.insert(Point(p, i + 33));
                     }
-                },
-            )
+                    // top right
+                    (00, 31, true) => {
+                        neighbours.insert(Point(p.nx(0, -1), 1022));
+                        neighbours.insert(Point(p.nx(0, -1), 1023));
+                        neighbours.insert(Point(p.nx(1, -1), 992));
+                        neighbours.insert(Point(p, i - 1));
+                        neighbours.insert(Point(p.nx(1, 0), 0));
+                        neighbours.insert(Point(p, i + 31));
+                        neighbours.insert(Point(p, i + 32));
+                        neighbours.insert(Point(p.nx(1, 0), 32));
+                    }
+                    // bottom left
+                    (31, 00, true) => {
+                        neighbours.insert(Point(p.nx(-1, 0), 991));
+                        neighbours.insert(Point(p, i - 32));
+                        neighbours.insert(Point(p, i - 31));
+                        neighbours.insert(Point(p.nx(-1, 0), 1023));
+                        neighbours.insert(Point(p, i + 1));
+                        neighbours.insert(Point(p.nx(-1, 1), 1));
+                        neighbours.insert(Point(p.nx(0, 1), 0));
+                        neighbours.insert(Point(p.nx(0, 1), 31));
+                    }
+                    // bottom right
+                    (31, 31, true) => {
+                        neighbours.insert(Point(p, i - 33));
+                        neighbours.insert(Point(p, i - 32));
+                        neighbours.insert(Point(p.nx(1, 0), 960));
+                        neighbours.insert(Point(p, i - 1));
+                        neighbours.insert(Point(p.nx(1, 0), 992));
+                        neighbours.insert(Point(p.nx(0, 1), 1022));
+                        neighbours.insert(Point(p.nx(0, 1), 1023));
+                        neighbours.insert(Point(p.nx(1, 1), 0));
+                    }
+                    // top
+                    (00, _, true) => {
+                        neighbours.insert(Point(p.nx(0, -1), 991 + i));
+                        neighbours.insert(Point(p.nx(0, -1), 992 + i));
+                        neighbours.insert(Point(p.nx(0, -1), 993 + i));
+                        neighbours.insert(Point(p, i - 1));
+                        neighbours.insert(Point(p, i + 1));
+                        neighbours.insert(Point(p, i + 31));
+                        neighbours.insert(Point(p, i + 32));
+                        neighbours.insert(Point(p, i + 33));
+                    }
+                    // left
+                    (_, 00, true) => {
+                        neighbours.insert(Point(p.nx(-1, 0), i - 1));
+                        neighbours.insert(Point(p, i - 32));
+                        neighbours.insert(Point(p, i - 31));
+                        neighbours.insert(Point(p.nx(-1, 0), i + 31));
+                        neighbours.insert(Point(p, i + 1));
+                        neighbours.insert(Point(p.nx(-1, 0), i + 63));
+                        neighbours.insert(Point(p, i + 32));
+                        neighbours.insert(Point(p, i + 33));
+                    }
+                    // right
+                    (_, 31, true) => {
+                        neighbours.insert(Point(p, i - 33));
+                        neighbours.insert(Point(p, i - 32));
+                        neighbours.insert(Point(p.nx(1, 0), i - 63));
+                        neighbours.insert(Point(p, i - 1));
+                        neighbours.insert(Point(p.nx(1, 0), i - 31));
+                        neighbours.insert(Point(p, i + 31));
+                        neighbours.insert(Point(p, i + 32));
+                        neighbours.insert(Point(p.nx(1, 0), i + 1));
+                    }
+                    // bottom
+                    (31, _, true) => {
+                        neighbours.insert(Point(p, i - 33));
+                        neighbours.insert(Point(p, i - 32));
+                        neighbours.insert(Point(p, i - 31));
+                        neighbours.insert(Point(p, i - 1));
+                        neighbours.insert(Point(p, i + 1));
+                        neighbours.insert(Point(p.nx(0, 1), i - 993));
+                        neighbours.insert(Point(p.nx(0, 1), i - 992));
+                        neighbours.insert(Point(p.nx(0, 1), i - 991));
+                    }
+                    // inside
+                    (_, _, true) => {
+                        neighbours.insert(Point(p, i - 33));
+                        neighbours.insert(Point(p, i - 32));
+                        neighbours.insert(Point(p, i - 31));
+                        neighbours.insert(Point(p, i - 1));
+                        neighbours.insert(Point(p, i + 1));
+                        neighbours.insert(Point(p, i + 31));
+                        neighbours.insert(Point(p, i + 32));
+                        neighbours.insert(Point(p, i + 33));
+                    }
+                    _ => {}
+                }
+            })
         });
         // dbg!("thus");
-        nb.iter().for_each(|p| match self.chunks.get_mut(&p.0) {
-            Some(ch) => {
-                ch.tiles[p.1].add_field(Field(1, 10));
+        neighbours.iter().for_each(|p| {
+            if let Some(ch) = self.chunks.get_mut(&p.0) {
+                {
+                    match ch.tiles[p.1].members != 0 {
+                        true => {
+                            ch.tiles[p.1] += Field(1, 10);
+                            // dbg!(&ch.tiles[p.1]);
+                        }
+                        false => {}
+                    }
+                }
             }
-            None => self.put(p),
         });
 
         if self.changed {
@@ -257,7 +236,7 @@ impl Point<u8> {
             .expect("Tile hilbert index overflow?")
     }
 
-    pub fn neighb(
+    pub fn nx(
         &self,
         x: i8,
         y: i8,
@@ -279,7 +258,7 @@ impl Point<u16> {
             .expect("Tile hilbert index overflow?")
     }
 
-    pub fn neighb(
+    pub fn nx(
         &self,
         x: i16,
         y: i16,
@@ -322,6 +301,16 @@ impl PartialOrd for Point<u16> {
         Some(self.cmp(other))
     }
 }
+impl Mul<f64> for Point<u8> {
+    type Output = Point<f64>;
+
+    fn mul(
+        self,
+        rhs: f64,
+    ) -> Self::Output {
+        Point(self.0 as f64 * rhs, self.1 as f64 * rhs)
+    }
+}
 impl Mul<f64> for Point<u16> {
     type Output = Point<f64>;
 
@@ -353,7 +342,7 @@ impl Add<Point<u8>> for Point<f64> {
     }
 }
 impl From<usize> for Point<u8> {
-    fn from(i: usize) -> Self { Point::<u8>((i / 32) as u8, (i % 32) as u8) }
+    fn from(i: usize) -> Self { Point::<u8>((i % 32) as u8, (i / 32) as u8) }
 }
 impl From<Point<u8>> for Point<f64> {
     fn from(p: Point<u8>) -> Self { Point(p.0 as f64, p.1 as f64) }

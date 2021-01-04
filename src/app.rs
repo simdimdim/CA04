@@ -87,15 +87,15 @@ impl App {
         let size = self.size.0;
         let transform = c
             .transform
-            .trans(self.focus[0] * size, self.focus[1] * size);
+            .trans(self.focus[0] * size * 32., self.focus[1] * size * 32.);
 
         // let con = Line::new([1., 1., 1., 0.8], 0.5);
         // let mut loc = [0f64; 4];
         let camera = (
-            (-self.focus[0]) as u16,
-            (-self.focus[1]) as u16,
-            (self.w / size) as u16 + 3,
-            (self.h / size) as u16 + 3,
+            (-self.focus[0]).trunc(),
+            (-self.focus[1]).trunc(),
+            ((self.w / size) / 31.).trunc(),
+            ((self.h / size) / 31.).trunc(),
         );
         self.world
             .chunks
@@ -103,7 +103,7 @@ impl App {
             .filter(|&(_, t)| t.on_screen(camera))
             .for_each(|(&p, chunk)| {
                 chunk.tiles.iter().filter(|&t| t.members > 0).for_each(|t| {
-                    let tile = (Point::from(p) + t.pos) * size;
+                    let tile = (p * 32. + t.pos) * size;
                     let rect = rectangle::square(tile.0, tile.1, size);
                     rectangle(t.color(), rect, transform, g);
                     // loc[2] = tile.0;
@@ -115,7 +115,7 @@ impl App {
 
         let cell_edge = Line::new([1., 0.3, 0., 1.], 1.);
         const TOP: f64 = 0.;
-        let x2 = (u16::MAX as f64 + 1.) * size - 1.;
+        let x2 = (u16::MAX as f64 + 1.) * size * 32. - 1.;
         cell_edge.draw([TOP, TOP, TOP, x2], &c.draw_state, transform, g);
         cell_edge.draw([TOP, TOP, x2, TOP], &c.draw_state, transform, g);
         cell_edge.draw([TOP, x2, x2, x2], &c.draw_state, transform, g);
@@ -179,25 +179,25 @@ impl App {
             Pass => {}
             Exit => self.exit(),
             Stats => self.stats = self.input.repeat(),
-            N => self.focus[3] += self.size.0.recip() * 10.,
+            N => self.focus[3] += 0.02,
             NE => {
-                self.focus[3] += self.size.0.recip() * 10.;
-                self.focus[2] -= self.size.0.recip() * 10.;
+                self.focus[3] += 0.02;
+                self.focus[2] -= 0.02;
             }
-            E => self.focus[2] -= self.size.0.recip() * 10.,
+            E => self.focus[2] -= 0.02,
             SE => {
-                self.focus[3] -= self.size.0.recip() * 10.;
-                self.focus[2] -= self.size.0.recip() * 10.;
+                self.focus[3] -= 0.02;
+                self.focus[2] -= 0.02;
             }
-            S => self.focus[3] -= self.size.0.recip() * 10.,
+            S => self.focus[3] -= 0.02,
             SW => {
-                self.focus[3] -= self.size.0.recip() * 10.;
-                self.focus[2] += self.size.0.recip() * 10.;
+                self.focus[3] -= 0.02;
+                self.focus[2] += 0.02;
             }
-            W => self.focus[2] += self.size.0.recip() * 10.,
+            W => self.focus[2] += 0.02,
             NW => {
-                self.focus[3] += self.size.0.recip() * 10.;
-                self.focus[2] += self.size.0.recip() * 10.;
+                self.focus[3] += 0.02;
+                self.focus[2] += 0.02;
             }
             ResetZoom => {
                 self.size = (20., 0.);
@@ -205,8 +205,8 @@ impl App {
                     self.focus = [0.0, 0.0, 0.0, 0.0];
                 } else {
                     self.focus = [
-                        -(u16::MAX as f64) + self.w / (self.size.0),
-                        -(u16::MAX as f64) + self.h / (self.size.0),
+                        -(u16::MAX as f64) + (self.w / self.size.0 / 32. - 1.),
+                        -(u16::MAX as f64) + (self.h / self.size.0 / 32. - 1.),
                         0.0,
                         0.0,
                     ];
@@ -241,23 +241,16 @@ impl App {
         }
     }
 
-    pub fn render(
-        &mut self,
-        _args: &RenderArgs,
-    ) {
-    }
-
     fn get_pos(
         &self,
         x: &f64,
         y: &f64,
     ) -> Point<Point<u16>, usize> {
+        let x1 = self.size.0.recip() * x / 32. - self.focus[0];
+        let y1 = self.size.0.recip() * y / 32. - self.focus[1];
         Point(
-            Point(
-                (self.size.0.recip() * x - self.focus[0]) as u16,
-                (self.size.0.recip() * y - self.focus[1]) as u16,
-            ),
-            ((32. * x.fract()).trunc() + ((32. * y.fract()).trunc() * 32.))
+            Point(x1.trunc() as u16, y1.trunc() as u16),
+            ((x1.fract() * 32.).trunc() + ((y1.fract() * 32.).trunc() * 32.))
                 .trunc() as usize,
         )
     }
@@ -291,6 +284,12 @@ impl App {
                 g,
             )
             .unwrap();
+    }
+
+    pub fn render(
+        &mut self,
+        _args: &RenderArgs,
+    ) {
     }
 
     pub fn exit(&mut self) { self.world.end(); }
